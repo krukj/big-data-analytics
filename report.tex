@@ -29,6 +29,26 @@
 \tableofcontents
 
 \newpage
+
+\section{Project Overview}
+The objective of this project is to design and implement a real-time financial transaction minitoring and anomaly detection system using Big Data techonolgies and machine learning.
+
+The solution will follow a Lambda Architecture. It will combine three different data sources including batch processing of historical financial transactions and stream processing of incoming transaction events. Additionally, synthetically generated account activity data, including login events and device information, will be incorporated to provide more detailed context for anomaly detection. A data generation and ingestion component will publish transaction and account activity events to Apache Kafka, while the data will be stored in MinIO storage.
+
+The batch layer will be responsible for training machine learning model on historical data and periodically retraining them as new data becomes available. In parallel, the speed layer will perform streaming inference by processing incoming transactions, applying the necessary preprocessing, and using latest trained model to generate anomaly risk prediction.
+
+The results will be presented through an interactive dashboard using Streamlit. It will allow users to monitor transaction activity, investigate anomaly alerts and explore statistics related to user's behaviour.
+
+\section{Project Deliverables from User's Perspective}
+From the user's perspective, the system will provide the following functionalities:
+\begin{enumerate}
+    \item Real-time transaction monitoring -- users will be able to observe incoming financial transactions and their anomaly risk prediction.
+    \item Anomaly detection and alerts -- transactions identified as suspicious will be highlighted and presented in a dedicated alert section, drawing users' attention to those suspicious activities.
+    \item Transaction investigation and statistics -- users will be able to examine individual transactions and explore overall transaction activity through interactive visualisations. The dashboard will present statistics such as transaction volumes, average transaction amounts, transaction type distributions, and transaction trends over time.
+    \item Anomaly detection analytics and model performance -- users will be able to analyze the results of the anomaly detection system, including alert trends over time. The dashboard will also provide model performance metrics, such as confusion matrices, precision, recall, and F1-score.
+\end{enumerate}
+
+\newpage
 % ----------------------------  LIST OF FIGURES --------------------------------
 \listoffigures
 \thispagestyle{empty}
