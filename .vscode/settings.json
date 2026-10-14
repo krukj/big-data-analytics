@@ -1,0 +1,5 @@
+{
+    "latex-workshop.latex.outDir": "%DIR%/report_compilation_result",
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    "latex-workshop.view.pdf.viewer": "tab"
+}
