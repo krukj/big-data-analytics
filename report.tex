@@ -31,13 +31,13 @@
 \newpage
 
 \section{Project Overview}
-The objective of this project is to design and implement a real-time financial transaction minitoring and anomaly detection system using Big Data techonolgies and machine learning.
+The objective of this project is to design and implement a real-time financial transaction minitoring and anomaly detection system using Big Data technologies and machine learning.
 
 The solution will follow a Lambda Architecture. It will combine three different data sources including batch processing of historical financial transactions and stream processing of incoming transaction events. Additionally, synthetically generated account activity data, including login events and device information, will be incorporated to provide more detailed context for anomaly detection. A data generation and ingestion component will publish transaction and account activity events to Apache Kafka, while the data will be stored in MinIO storage.
 
-The batch layer will be responsible for training machine learning model on historical data and periodically retraining them as new data becomes available. In parallel, the speed layer will perform streaming inference by processing incoming transactions, applying the necessary preprocessing, and using latest trained model to generate anomaly risk prediction.
+The batch layer will be responsible for training machine learning models on historical data and periodically retraining them as new data becomes available. In parallel, the speed layer will perform streaming inference by processing incoming transactions, applying the necessary preprocessing, and using latest trained model to generate anomaly risk prediction. Data processed in batch and speed layers will be available as real-time and batch views using Cassandra.
 
-The results will be presented through an interactive dashboard using Streamlit. It will allow users to monitor transaction activity, investigate anomaly alerts and explore statistics related to user's behaviour.
+The results will be presented through an interactive dashboard using Streamlit. It will allow users to monitor transaction activity, investigate anomaly alerts and explore statistics related to user behaviour.
 
 \section{Project Deliverables from User's Perspective}
 From the user's perspective, the system will provide the following functionalities:
@@ -47,6 +47,35 @@ From the user's perspective, the system will provide the following functionaliti
     \item Transaction investigation and statistics -- users will be able to examine individual transactions and explore overall transaction activity through interactive visualisations. The dashboard will present statistics such as transaction volumes, average transaction amounts, transaction type distributions, and transaction trends over time.
     \item Anomaly detection analytics and model performance -- users will be able to analyze the results of the anomaly detection system, including alert trends over time. The dashboard will also provide model performance metrics, such as confusion matrices, precision, recall, and F1-score.
 \end{enumerate}
+
+\section{Infrastructure}
+The solution will be based on Lambda architecture. 
+\begin{itemize}
+    \item Ingestion -- The system integrates 3 data sources: transactions from Bank X (sent in batches every hour), user activity data from Bank X (sent in batches every hour), and real-time transactions from Bank Y. Apache Kafka will serve as a message broker, routing the events to the next layers. The preprocessing component in the Speed layer and Storage component in the Batch layer will act as Kafka consumers.
+    \item Batch layer -- Raw batch data will be stored in MinIO (or SeaweedFS) in Parquet format. Apache Airflow will orchestrate the process of retraining the machine learning model:
+    \begin{itemize}
+        \item Data will be loaded from the storage and preprocessed using Apache Spark;
+        \item The ML model will be re-trained and saved back to the storage.
+    \end{itemize}
+    \item Speed layer -- The data will be preprocessed and the prediction will be generated using the latest model from the storage. This process will be handled by Apache Spark (or Kafka in Python). The data with the predictions will be sent to Serving layer.
+    \item  Serving layer -- it will contain:
+    \begin{itemize}
+        \item Real-time views -- stored in Cassandra tables containing incoming transactions and their predictions;
+        \item Batch views -- stored in Cassandra tables containing historical analysis and aggregations. 
+    \end{itemize}
+    \item Consumption -- The frontend part will be build using Streamlit. The user will be able to explore different views, such as real-time transaction monitoring or historical transaction statistics.
+\end{itemize}
+
+\section{Planned use of GenAI}
+The use of GenAI tools will be limited to non-coding tasks.
+Specifically, they will be used for:
+\begin{itemize}
+    \item help with research;
+    \item styling the dashboard (e.g., CSS);
+    \item debugging potential errors;
+    \item grammar imporovement of the report, creating LaTex tables and diagrams.
+\end{itemize}
+
 
 \newpage
 % ----------------------------  LIST OF FIGURES --------------------------------
