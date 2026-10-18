@@ -13,6 +13,9 @@
 \usepackage{amsmath}
 \usepackage[hidelinks]{hyperref}
 \usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
 
 \title{
 \Huge Big Data Analytics \\
@@ -76,9 +79,9 @@ PaySim is a synthetic dataset available on Kaggle: \href{https://www.kaggle.com/
     \end{tabular}
 \end{table}
 One simulation step represents one hour, with 743 observed steps spanning approximately 31 days. \\
-The dataset contains two fraud-related fields: isFraud, identifying fraudulent transactions in the simulation, and isFlaggedFraud, representing an existing rule-based detection mechanism. Since the project focuses on unsupervised anomaly detection rather than supervised fraud classification, these labels will not be used as model input features or training targets. The objective is to identify transactions that deviate from typical patterns. \\
+The dataset contains two fraud-related fields: isFraud, identifying fraudulent transactions in the simulation, and isFlaggedFraud, representing an existing rule-based detection mechanism. Since the project focuses on unsupervised anomaly detection rather than supervised fraud classification, these labels will not be used as model input features or training targets. The objective is to identify transactions that deviate from typical patterns.
 
-Preliminary exploratory data analysis (EDA) revealed no missing values or duplicate records. The dataset contains five transaction types:
+Preliminary exploratory data analysis revealed no missing values or duplicate records. The dataset contains five transaction types:
 \begin{itemize}
     \item CASH\_OUT -- 35.17\% of all transactions,
     \item PAYMENT -- 33.81\% of all transactions,
@@ -117,6 +120,86 @@ The dataset contains 6 353 307 unique senders, indicating that nearly every send
     \end{tabular}
 \end{table}
 This suggests that historical recipient-level features may provide additional context, subject to their availability across the batch and streaming periods. Based on these findings, the proposed system will model typical transaction patterns rather than individual customer behavior.
+
+\subsection{Synthetic data generation}
+\subsubsection{Reference dataset: IEEE-CIS Fraud Detection}
+The IEEE-CIS Fraud Detection dataset is available on Kaggle: \href{https://www.kaggle.com/competitions/ieee-fraud-detection/data?utm_source=chatgpt.com&select=train_transaction.csv}{IEEE-CIS Fraud Detection}. It contains real-world e-commerce transaction records provided by Vesta Corporation. The dataset includes transaction-related features and partially anonymized identity information, such as device characteristics and browser details.
+
+The analysis takes into considaration two files: the one related to transaction data, containing 590 540 transactions and 394 attributes, and the one associated with identity information, containing 144 233 records and 41 attributes. Identity records are available for only 24.42\% of transactions, meaning that the remaining 75.58\% have no corresponding records in the identity dataset. \\
+
+\noindent \textbf{Data completeness and device characteristics}\\
+Many IEEE-CIS attributes are anonymized. The preliminary analysis focuses on features whose interpretation can be inferred from their names and observed values. Selected attributes include \texttt{DeviceType}, \texttt{DeviceInfo}, \texttt{id\_30} (operating system), \texttt{id\_31} (browser), and \texttt{id\_33} (screen resolution). Additionally, \texttt{TransactionAmt}, \texttt{ProductCD}, and \texttt{isFraud} were included to examine relationships between device characteristics and transaction patterns. \texttt{TransactionID} was used to join the datasets, while \texttt{TransactionDT} provides relative reference transaction timing information.
+
+Exploratory data analysis revealed varying levels of missing data among identity attributes. Within the identity dataset, \texttt{DeviceType} and browser information (\texttt{id\_31}) have relatively low missing-value rates of 2.37\% and 2.74\%, respectively. In contrast, operating system information (\texttt{id\_30}) is missing in 46.22\% of records, screen resolution (\texttt{id\_33}) in 49.19\%, and \texttt{DeviceInfo} in 17.73\%.
+
+Among identity records, 59.05\% correspond to desktop devices and 38.58\% to mobile devices, while the remaining 2.37\% have an unknown device type. The most common device information values include Windows, iOS Device, and MacOS. Browser and operating system distributions also vary significantly between desktop and mobile devices. \\
+
+\noindent \textbf{Device profile analysis}\\
+To investigate dependencies between device attributes, combinations of device type, operating system, and browser were examined. The analysis identified 937 distinct device profiles, with the 20 most frequent combinations accounting for 51.51\% of identity records. These findings indicate that device attributes should not be generated independently. Instead, sampling complete profiles according to their observed frequencies can preserve realistic relationships between device characteristics.
+
+Transactions associated with desktop devices have a higher mean amount (92.60) than those associated with mobile devices (69.50), with corresponding medians of 54.44 and 46.42. Product category distributions also differ by device type. For example, category C represents 52.42\% of mobile transactions compared with 37.39\% of desktop transactions. \\
+
+\noindent \textbf{Transaction characteristics and fraud patterns}\\
+The observed fraud rate is 6.52\% for desktop transactions and 10.17\% for mobile transactions. Furthermore, transactions with available identity records have a fraud rate of 7.85\%, compared with 2.09\% for transactions without identity records. These results show differences between groups of transactions, but it does not need to mean that device type or identity data availability causes a higher fraud risk.\\
+
+\noindent \textbf{Impact for the generation of synthetic data}\\
+The IEEE-CIS dataset will be used as a reference for generating synthetic device information that will complement PaySim transactions. Instead of directly copying IEEE-CIS records, the generator will use observed distributions and relationships between device attributes to create realistic device profiles.
+
+The planned use of selected attributes is shown in Table~\ref{tab:ieee_attributes}.
+\begin{table}[htbp]
+    \centering
+    \caption{IEEE-CIS attributes and their planned use in synthetic data generation}
+    \label{tab:ieee_attributes}
+    \small
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabularx}{\textwidth}{@{}lXX@{}}
+        \toprule
+        \textbf{IEEE-CIS attribute} &
+        \textbf{Information provided} &
+        \textbf{Planned use} \\
+        \midrule
+
+        \texttt{DeviceType} &
+        Device type (mobile/desktop) &
+        Generate device types, with proportions adjusted if necessary to better reflect PaySim's mobile money environment. \\
+
+        \addlinespace
+
+        \texttt{id\_30} &
+        Operating system and version &
+        Generate operating systems consistent with device types. \\
+
+        \addlinespace
+
+        \texttt{id\_31} &
+        Browser and version &
+        Generate browsers consistent with device types and operating systems. \\
+
+        \addlinespace
+
+        \texttt{DeviceInfo} &
+        Device information, such as model or platform &
+        Add further details to generated device profiles. \\
+
+        \addlinespace
+
+        \texttt{id\_33} &
+        Screen resolution &
+        Optionally include additional device characteristics. \\
+
+        \addlinespace
+
+        Combinations of device attributes &
+        Observed relationships and frequencies &
+        Generate coherent device profiles rather than sampling each attribute independently. \\
+
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+In addition to device profiles, we plan to introduce a separate synthetic account activity source, including events such as successful and failed logins and device changes. These events will not be generated entirely randomly, but will be partly influenced by the PaySim \texttt{isFraud} label to create more realistic account activity patterns.
+
+\subsubsection{Synthetic data generation methodology}
 
 \section{Infrastructure}
 The solution will be based on Lambda architecture. 
