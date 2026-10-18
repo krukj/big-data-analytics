@@ -63,7 +63,6 @@ Figure~\ref{fig:bpmn_core} presents it as a business process across five partici
     \label{fig:bpmn_core}
 \end{figure}
 
-\section{Data sources and their preliminary investigation}
 
 \section{Data sources and their preliminary investigation}
 \subsection{PaySim -- financial transaction dataset}
@@ -264,6 +263,8 @@ Since most sender accounts in PaySim appear only once, the dataset provides very
 
 The volume of synthetic data will depend on the number of PaySim accounts and the number of account activity events generated for each account. Synthetic account activity events and PaySim transactions will be sent to Apache Kafka to simulate real-time data processing. The rate at which events are sent will be configurable, allowing the system to be tested with different amounts of incoming data.
 
+To make the stream realistic, the generator will inject controlled faults into the emitted events: missing attribute values, out-of-order delivery and duplicated events, each at a configurable rate. These faults are not corrected at the source; they are detected and resolved in the preprocessing step, as described in Section~\ref{sec:assumptions}.
+
 Synthetic events will be divided into historical and streaming data using the same simulation timeline as PaySim.
 
 \subsection{Reserve data source: IBM TabFormer credit card transactions}
@@ -396,13 +397,15 @@ Each assumption refers to an element of Figure~\ref{fig:architecture_diagram}.
 \begin{itemize}
     \item \textbf{Dataset splitting (Data sources).} PaySim transactions and synthetic account-activity events with \texttt{step} $\le 500$ form the historical batch data; later events are replayed as a stream. One step is one simulated hour in every layer.
     \item \textbf{Stream replay (Data sources $\rightarrow$ Ingestion).} Both streams are replayed along the same timeline, one step per $R$ seconds (initially $R = 10$, i.e.\ about 0.2--5\,100 events/s). One message carries one event; transactions and account activity use separate topics keyed by account identifier.
-    \item \textbf{Delivery (Ingestion).} Delivery is at-least-once; a duplicated event overwrites its earlier copy because the event identifier is the write key, so no record is stored twice. Events are processed in arrival order.
+    \item \textbf{Stream perturbation (Data sources $\rightarrow$ Ingestion).} The generator injects faults into the emitted events: missing attribute values (initially 2\% of events), out-of-order events (1\%, delayed by up to two steps) and duplicates (0.5\%). Rates are configurable; faults are not corrected at the source.
+    \item \textbf{Delivery (Ingestion).} Delivery is at-least-once. Each event carries its own event time (\texttt{step}, \texttt{event\_timestamp}), so arrival order is not assumed to match event order.
 \end{itemize}
 
 \noindent \textbf{Batch path}
 \begin{itemize}
     \item \textbf{Storage (Storage $\rightarrow$ MinIO).} Raw events are appended, partitioned by \texttt{step} and event type; the store is append-only and is the system of record.
     \item \textbf{Preprocessing (Spark preprocessing).} One shared feature-engineering module is used by both layers, so training and inference see identical features. \texttt{isFraud} and \texttt{isFlaggedFraud} are never used as features or targets, only to compute dashboard evaluation metrics.
+    \item \textbf{Fault handling (Spark preprocessing, Preprocessing).} Events missing a mandatory attribute are rejected and counted; missing optional attributes are set to \texttt{unknown}. Duplicates are collapsed by event identifier. Out-of-order events are re-sorted by event time in the batch path and flagged \texttt{late} in the speed path.
     \item \textbf{Model re-training (ML model re-training $\rightarrow$ MinIO).} An unsupervised model is re-trained every 24 steps on the full historical window and saved under a timestamped path with its threshold $\tau$ (99th percentile of training scores); the newest version is the \emph{latest model}.
     \item \textbf{Batch views (MinIO $\rightarrow$ Cassandra).} Aggregates and model metrics are fully recomputed after each re-training and overwritten.
 \end{itemize}
