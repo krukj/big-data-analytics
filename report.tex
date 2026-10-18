@@ -254,23 +254,45 @@ The volume of synthetic data will depend on the number of PaySim accounts and th
 
 Synthetic events will be divided into historical and streaming data using the same simulation timeline as PaySim.
 
-\section{Infrastructure}
-The solution will be based on Lambda architecture. 
+\section{Data processing and proposed infrastructure}
+The data processing pipeline follows the Lambda Architecture principles, maintaining two parallel data flow paths: 
+a \textbf{Batch Layer} for historical feature engineering and periodic ML model re-training, and a \textbf{Speed Layer} 
+for low-latency streaming inference and real-time alert generation.
+
+The data processing pipeline relies on the following foundational assumptions and mechanisms, as illustrated in the high-level data flow diagram:
 \begin{itemize}
-    \item Ingestion -- The system integrates 3 data sources: transactions from Bank X (sent in batches every hour), user activity data from Bank X (sent in batches every hour), and real-time transactions from Bank Y. Apache Kafka will serve as a message broker, routing the events to the next layers. The preprocessing component in the Speed layer and Storage component in the Batch layer will act as Kafka consumers.
+    \item Dataset Splitting: To evaluate both batch and streaming capabilities, the historical PaySim dataset is split at step 500 (representing hour 500 of the simulation). Transactions up to step 500 serve as historical batch data, while subsequent transactions are replayed over time to simulate a live operational environment.
+    \item Stream Replay \& Event Generation: Real-time transaction streams (replayed from PaySim) and synthetically generated account activity events (based on IEEE-CIS distributions) are emitted concurrently. These streams are published to Apache Kafka.
+    \item Dual Ingestion Path: Events entering Kafka are consumed simultaneously by the Batch Layer storage consumer (for historical archiving) and the Speed Layer processor (for real-time inference).
+\end{itemize}
+
+The proposed infrastructure consists of the following components:
+\begin{itemize}
+    \item Ingestion layer -- The system will integrate three primary sources: historical PaySim data (hourly batches), real-time replayed transactions, and synthetic account activity streams. Apache Kafka will serve as a message broker, routing the events to the next layers. The preprocessing component in the Speed layer and Storage component in the Batch layer will act as Kafka consumers.
     \item Batch layer -- Raw batch data will be stored in MinIO (or SeaweedFS) in Parquet format. Apache Airflow will orchestrate the process of retraining the machine learning model:
     \begin{itemize}
         \item Data will be loaded from the storage and preprocessed using Apache Spark;
         \item The ML model will be re-trained and saved back to the storage.
     \end{itemize}
     \item Speed layer -- The data will be preprocessed and the prediction will be generated using the latest model from the storage. This process will be handled by Apache Spark (or Kafka in Python). The data with the predictions will be sent to Serving layer.
-    \item  Serving layer -- it will contain:
+    \item  Serving layer -- it will contain two types of views:
     \begin{itemize}
         \item Real-time views -- stored in Cassandra tables containing incoming transactions and their predictions;
         \item Batch views -- stored in Cassandra tables containing historical analysis and aggregations. 
     \end{itemize}
     \item Consumption -- The frontend part will be build using Streamlit. The user will be able to explore different views, such as real-time transaction monitoring or historical transaction statistics.
 \end{itemize}
+
+The proposed data flow and solution architecture are illustated in Figure~\ref{fig:architecture_diagram}. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{report_plots/infrastructure_diagram_vertical.png}
+    \caption{Data flow and solution architecture}
+    \label{fig:architecture_diagram}
+\end{figure}
+
+
 
 \section{Planned use of GenAI}
 The use of GenAI tools will be limited to non-coding tasks.
