@@ -27,7 +27,7 @@
 \small Team: philodendron white measure \\
 \vspace{0.3em}
 \small Project manager: Nadia Serafin}
-\date{}
+\date{October 2026}
 
 \begin{document}
 \maketitle
@@ -51,7 +51,7 @@ From the user's perspective, the system will provide the following functionaliti
     \item Real-time transaction monitoring -- users will be able to observe incoming financial transactions and their anomaly risk prediction.
     \item Anomaly detection and alerts -- transactions identified as suspicious will be highlighted and presented in a dedicated alert section, drawing users' attention to those suspicious activities.
     \item Transaction investigation and statistics -- users will be able to examine individual transactions and explore overall transaction activity through interactive visualisations. The dashboard will present statistics such as transaction volumes, average transaction amounts, transaction type distributions, and transaction trends over time.
-    \item Anomaly detection analytics and model performance -- users will be able to analyze the results of the anomaly detection system, including alert trends over time. The dashboard will also provide model performance metrics, such as confusion matrices, precision, recall, and F1-score.
+    \item Anomaly detection analytics and model performance -- users will be able to analyze the results of the anomaly detection system, including alert trends over time. The dashboard will also provide anomaly detection statistics, such as the number and percentage of detected anomalies, anomaly score distributions, and trends in detected anomalies over time.
 \end{enumerate}
 
 
@@ -94,7 +94,7 @@ PaySim is a synthetic dataset available on Kaggle: \href{https://www.kaggle.com/
     \end{tabular}
 \end{table}
 One simulation step represents one hour, with 743 observed steps spanning approximately 31 days.
-The dataset contains two fraud-related fields: isFraud (identifying fraudulent transactions in the simulation) and isFlaggedFraud (representing an existing rule-based detection mechanism). Since the project focuses on unsupervised anomaly detection rather than supervised fraud classification, these labels will not be used as model input features or training targets. The objective is to identify transactions that deviate from typical patterns.
+The dataset contains two fraud-related fields: \texttt{isFraud} (identifying fraudulent transactions in the simulation) and isFlaggedFraud (representing an existing rule-based detection mechanism). Since the project focuses on unsupervised anomaly detection rather than supervised fraud classification, these labels will not be used as model input features or training targets. The objective is to identify transactions that deviate from typical patterns.
 
 Preliminary exploratory data analysis revealed no missing values or duplicate records. The dataset contains five transaction types:
 \begin{itemize}
@@ -350,12 +350,10 @@ listed in Table~\ref{tab:tabformer}.
 Compared with PaySim, this dataset provides a dense transaction history for every user (on average more than ten 
 thousand transactions per user), a per-transaction label that matches transaction-level anomaly scoring, and a time 
 span long enough to replay an effectively unbounded stream. These properties make it suitable for evaluating and 
-tuning the anomaly detection model.
+tuning the anomaly detection model.\\
 
-\paragraph{Role in the project.} This dataset is treated as a \emph{reserve} data source. It will be used only if the
- primary sources (the PaySim transaction stream and the synthetic account activity events) turn out to be insufficient, 
- in particular if the volume of streaming data after the batch/stream split proves too small to evaluate and optimise 
- the model in the later project phases. For this reason it is not described further in the following sections.
+\noindent \textbf{Role in the project}\\
+This dataset is treated as a \emph{reserve} data source. It will be used only if the primary sources (the PaySim transaction stream and the synthetic account activity events) turn out to be insufficient,  in particular if the volume of streaming data after the batch/stream split proves too small to evaluate and optimise the model in the later project phases. For this reason it is not described further in the following sections.
 
 Should it be activated, it would be ingested as a second transaction source through the same Kafka, batch and speed layer components, after mapping its 
 attributes to the common transaction schema used for PaySim, and its fraud label would be used exclusively for model
@@ -445,8 +443,8 @@ Specifically, they will be used for:
         \hline
         \textbf{Team Member} & \textbf{Responsibilities} \\ \hline
         Julia Kruk & System containerization via Docker, streaming real-time transaction data to Apache Kafka, implementing low-latency preprocessing (handling out-of-order events and missing values). \\ \hline
-        Nadia Serafin & Managing MinIO storage, building historical data pipelines with Apache Spark, and developing and evaluating the anomaly detection models. \\ \hline
-        Barbara Seweryn & Generating synthetic account activity data, simulating real-world stream disturbances, and configuring Apache Airflow for automated model re-training. \\ \hline
+        Nadia Serafin & Generating synthetic account activity data, building historical data pipelines with Apache Spark, and developing and evaluating the anomaly detection models. \\ \hline
+        Barbara Seweryn & Managing MinIO storage, simulating real-world stream disturbances, and configuring Apache Airflow for automated model re-training. \\ \hline
         Zuzanna Sieńko & Designing Apache Cassandra tables (Real-Time and Batch Views), executing real-time ML inference, and developing the Streamlit dashboard. \\ \hline
     \end{tabularx}
 \end{table}
