@@ -1,12 +1,12 @@
-\documentclass{article}
+\documentclass[titlepage]{article}
 \usepackage{graphicx} % Required for inserting images
 \usepackage[backend=biber, style=ieee]{biblatex}
 \addbibresource{references.bib}
 \usepackage[
-    top=2cm,
-    bottom=2cm,
-    left=2cm,
-    right=2cm
+    top=3cm,
+    bottom=3cm,
+    left=2.5cm,
+    right=2.5cm
 ]{geometry}
 \usepackage{booktabs}
 \usepackage{float}
@@ -28,7 +28,6 @@
 \begin{document}
 \maketitle
 
-\newpage
 \tableofcontents
 
 \newpage
@@ -146,7 +145,7 @@ The observed fraud rate is 6.52\% for desktop transactions and 10.17\% for mobil
 The IEEE-CIS dataset will be used as a reference for generating synthetic device information that will complement PaySim transactions. Instead of directly copying IEEE-CIS records, the generator will use observed distributions and relationships between device attributes to create realistic device profiles.
 
 The planned use of selected attributes is shown in Table~\ref{tab:ieee_attributes}.
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{IEEE-CIS attributes and their planned use in synthetic data generation}
     \label{tab:ieee_attributes}
@@ -187,7 +186,7 @@ In addition to device profiles, we plan to introduce a separate synthetic accoun
 
 \subsubsection{Planned synthetic data generation}
 A synthetic account activity dataset will be generated to provide additional context for PaySim transactions. As mentioned above, the generated data will include structured events, such as successful and failed login attempts and device changes, together with account identifiers, timestamps, and device information. Device profiles will be based on distributions and relationships observed in the IEEE-CIS dataset, while account activity patterns will be generated using simulation assumptions and may be partly influenced by the PaySim isFraud label.
-\begin{table}[htbp]
+\begin{table}[H]
     \centering
     \caption{Proposed schema of synthetic data}
     \label{tab:synthetic_events_schema}
@@ -347,15 +346,17 @@ evaluation.
 \section{Data processing and proposed infrastructure}
 The data processing pipeline follows the Lambda Architecture principles, maintaining two parallel data flow paths: 
 a \textbf{Batch Layer} for historical feature engineering and periodic ML model re-training, and a \textbf{Speed Layer} 
-for low-latency streaming inference and real-time alert generation.
+for low-latency streaming inference and real-time alert generation. The high-level data flow is shown in Figure~\ref{fig:architecture_diagram}; the assumptions in Section~\ref{sec:assumptions} refer to its elements by name.
 
-The data processing pipeline relies on the following foundational assumptions and mechanisms, as illustrated in the high-level data flow diagram:
-\begin{itemize}
-    \item Dataset Splitting: To evaluate both batch and streaming capabilities, the historical PaySim dataset is split at step 500 (representing hour 500 of the simulation). Transactions up to step 500 serve as historical batch data, while subsequent transactions are replayed over time to simulate a live operational environment.
-    \item Stream Replay \& Event Generation: Real-time transaction streams (replayed from PaySim) and synthetically generated account activity events (based on IEEE-CIS distributions) are emitted concurrently. These streams are published to Apache Kafka.
-    \item Dual Ingestion Path: Events entering Kafka are consumed simultaneously by the Batch Layer storage consumer (for historical archiving) and the Speed Layer processor (for real-time inference).
-\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{report_plots/infrastructure_diagram_vertical.png}
+    \caption{Data flow and solution architecture}
+    \label{fig:architecture_diagram}
+\end{figure}
 
+\newpage
+\subsection{Proposed infrastructure}
 The proposed infrastructure consists of the following components:
 \begin{itemize}
     \item Ingestion layer -- The system will integrate three primary sources: historical PaySim data (hourly batches), real-time replayed transactions, and synthetic account activity streams. Apache Kafka will serve as a message broker, routing the events to the next layers. The preprocessing component in the Speed layer and Storage component in the Batch layer will act as Kafka consumers.
@@ -373,14 +374,34 @@ The proposed infrastructure consists of the following components:
     \item Consumption -- The frontend part will be build using Streamlit. The user will be able to explore different views, such as real-time transaction monitoring or historical transaction statistics.
 \end{itemize}
 
-The proposed data flow and solution architecture are illustated in Figure~\ref{fig:architecture_diagram}. 
 
-\begin{figure}
-    \centering
-    \includegraphics[width=0.8\textwidth]{report_plots/infrastructure_diagram_vertical.png}
-    \caption{Data flow and solution architecture}
-    \label{fig:architecture_diagram}
-\end{figure}
+\subsection{Key assumptions regarding data processing}
+\label{sec:assumptions}
+Each assumption refers to an element of Figure~\ref{fig:architecture_diagram}.
+
+\noindent \textbf{Sources and ingestion}
+\begin{itemize}
+    \item \textbf{Dataset splitting (Data sources).} PaySim transactions and synthetic account-activity events with \texttt{step} $\le 500$ form the historical batch data; later events are replayed as a stream. One step is one simulated hour in every layer.
+    \item \textbf{Stream replay (Data sources $\rightarrow$ Ingestion).} Both streams are replayed along the same timeline, one step per $R$ seconds (initially $R = 10$, i.e.\ about 0.2--5\,100 events/s). One message carries one event; transactions and account activity use separate topics keyed by account identifier.
+    \item \textbf{Delivery (Ingestion).} Delivery is at-least-once; a duplicated event overwrites its earlier copy because the event identifier is the write key, so no record is stored twice. Events are processed in arrival order.
+\end{itemize}
+
+\noindent \textbf{Batch path}
+\begin{itemize}
+    \item \textbf{Storage (Storage $\rightarrow$ MinIO).} Raw events are appended, partitioned by \texttt{step} and event type; the store is append-only and is the system of record.
+    \item \textbf{Preprocessing (Spark preprocessing).} One shared feature-engineering module is used by both layers, so training and inference see identical features. \texttt{isFraud} and \texttt{isFlaggedFraud} are never used as features or targets, only to compute dashboard evaluation metrics.
+    \item \textbf{Model re-training (ML model re-training $\rightarrow$ MinIO).} An unsupervised model is re-trained every 24 steps on the full historical window and saved under a timestamped path with its threshold $\tau$ (99th percentile of training scores); the newest version is the \emph{latest model}.
+    \item \textbf{Batch views (MinIO $\rightarrow$ Cassandra).} Aggregates and model metrics are fully recomputed after each re-training and overwritten.
+\end{itemize}
+
+\noindent \textbf{Speed path}
+\begin{itemize}
+    \item \textbf{Scoring (Preprocessing $\rightarrow$ Prediction).} Each event is scored statelessly from its own attributes and precomputed recipient-level aggregates from the batch views.
+    \item \textbf{Model refresh (MinIO $\rightarrow$ Prediction).} The Speed Layer checks for a newer model every minute and swaps atomically; in-flight events keep the previous version.
+    \item \textbf{Output (Prediction $\rightarrow$ Cassandra).} Each scored event carries its score and \texttt{is\_anomaly} $=$ (score $\ge \tau$); target latency Kafka $\rightarrow$ Cassandra below 2~s.
+\end{itemize}
+
+\noindent \textbf{Serving (Cassandra $\rightarrow$ Streamlit).} The dashboard reads only from Cassandra; real-time views are partitioned by \texttt{step}. All timestamps are simulated; wall-clock time only paces the replay.
 
 
 
