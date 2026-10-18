@@ -254,6 +254,96 @@ The volume of synthetic data will depend on the number of PaySim accounts and th
 
 Synthetic events will be divided into historical and streaming data using the same simulation timeline as PaySim.
 
+\subsection{Reserve data source: IBM TabFormer credit card transactions}
+\label{sec:tabformer}
+
+The IBM TabFormer dataset is a synthetic credit card transaction dataset released by IBM together with the TabFormer
+paper (Padhi et al., ICASSP 2021) and available on Kaggle: \href{https://www.kaggle.com/datasets/ealtman2019/credit-card-transactions}{Credit Card Transactions}
+and on GitHub: \href{https://github.com/IBM/TabFormer}{IBM/TabFormer}. It contains approximately 24 million card transactions
+generated for about 2\,000 synthetic users over a period of roughly three decades (1991--2020). Transactions are 
+produced by a rule-based generator with stochastic sampling and include merchant, location and error information, 
+together with a per-transaction fraud label (\texttt{Is Fraud?}, about 0.12\% of records). The attributes are
+listed in Table~\ref{tab:tabformer}.
+
+\begin{table}[H][htbp]
+    \centering
+    \caption{Attributes of the IBM TabFormer dataset}
+    \label{tab:tabformer}
+    \small
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabularx}{\textwidth}{@{}l l X@{}}
+        \toprule
+        \textbf{Attribute} & \textbf{Data type} & \textbf{Description} \\
+        \midrule
+
+        \texttt{User} & Integer & Synthetic user identifier \\
+
+        \addlinespace
+
+        \texttt{Card} & Integer & Card index within a user \\
+
+        \addlinespace
+
+        \texttt{Year}, \texttt{Month}, \texttt{Day} & Integer & Transaction date components \\
+
+        \addlinespace
+
+        \texttt{Time} & String (HH:MM) & Transaction time \\
+
+        \addlinespace
+
+        \texttt{Amount} & String & Amount with currency symbol; negative values represent refunds \\
+
+        \addlinespace
+
+        \texttt{Use Chip} & String (categorical) & \texttt{Swipe Transaction}, \texttt{Chip Transaction}, \texttt{Online Transaction} \\
+
+        \addlinespace
+
+        \texttt{Merchant Name} & Integer & Hashed merchant identifier \\
+
+        \addlinespace
+
+        \texttt{Merchant City} & String & Merchant city (\texttt{ONLINE} for online transactions) \\
+
+        \addlinespace
+
+        \texttt{Merchant State} & String & Merchant state or country; missing for online transactions \\
+
+        \addlinespace
+
+        \texttt{Zip} & Float & Merchant ZIP code; missing for online transactions \\
+
+        \addlinespace
+
+        \texttt{MCC} & Integer & Merchant category code \\
+
+        \addlinespace
+
+        \texttt{Errors?} & String & Comma-separated error flags, e.g.\ \texttt{Bad PIN}, \texttt{Insufficient Balance} \\
+
+        \addlinespace
+
+        \texttt{Is Fraud?} & String (categorical) & \texttt{Yes}, \texttt{No}; fraud label used for evaluation only \\
+
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Compared with PaySim, this dataset provides a dense transaction history for every user (on average more than ten 
+thousand transactions per user), a per-transaction label that matches transaction-level anomaly scoring, and a time 
+span long enough to replay an effectively unbounded stream. These properties make it suitable for evaluating and 
+tuning the anomaly detection model.
+
+\paragraph{Role in the project.} This dataset is treated as a \emph{reserve} data source. It will be used only if the
+ primary sources (the PaySim transaction stream and the synthetic account activity events) turn out to be insufficient, 
+ in particular if the volume of streaming data after the batch/stream split proves too small to evaluate and optimise 
+ the model in the later project phases. For this reason it is not described further in the following sections.
+
+Should it be activated, it would be ingested as a second transaction source through the same Kafka, batch and speed layer components, after mapping its 
+attributes to the common transaction schema used for PaySim, and its fraud label would be used exclusively for model
+evaluation.
+
 \section{Data processing and proposed infrastructure}
 The data processing pipeline follows the Lambda Architecture principles, maintaining two parallel data flow paths: 
 a \textbf{Batch Layer} for historical feature engineering and periodic ML model re-training, and a \textbf{Speed Layer} 
