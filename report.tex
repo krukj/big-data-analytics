@@ -64,17 +64,17 @@ PaySim is a synthetic dataset available on Kaggle: \href{https://www.kaggle.com/
         \toprule
         \textbf{Attribute} & \textbf{Data type} \\
         \midrule
-        step & int64 \\
-        type & categorical \\
-        amount & float64 \\
-        nameOrig & string \\
-        oldbalanceOrg & float64 \\
-        newbalanceOrig & float64 \\
-        nameDest & string \\
-        oldbalanceDest & float64 \\
-        newbalanceDest & float64 \\
-        isFraud & int64 \\
-        isFlaggedFraud & int64 \\
+        step & Integer \\
+        type & String (categorical) \\
+        amount & Float \\
+        nameOrig & String \\
+        oldbalanceOrg & Float \\
+        newbalanceOrig & Float \\
+        nameDest & String \\
+        oldbalanceDest & Float \\
+        newbalanceDest & Float \\
+        isFraud & Integer \\
+        isFlaggedFraud & Integer \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -119,7 +119,7 @@ The dataset contains 6 353 307 unique senders, indicating that nearly every send
         \bottomrule
     \end{tabular}
 \end{table}
-This suggests that historical recipient-level features may provide additional context, subject to their availability across the batch and streaming periods. Based on these findings, the proposed system will model typical transaction patterns rather than individual customer behavior.
+This suggests that historical recipient-level features may provide additional context, subject to their availability across the batch and streaming periods. Based on these findings, the proposed system will model typical transaction patterns rather than individual customer behaviour.
 
 \subsection{Synthetic data generation}
 \subsubsection{Reference dataset: IEEE-CIS Fraud Detection}
@@ -154,44 +154,30 @@ The planned use of selected attributes is shown in Table~\ref{tab:ieee_attribute
     \renewcommand{\arraystretch}{1.3}
     \begin{tabularx}{\textwidth}{@{}lXX@{}}
         \toprule
-        \textbf{IEEE-CIS attribute} &
-        \textbf{Information provided} &
-        \textbf{Planned use} \\
+        \textbf{IEEE-CIS attribute} & \textbf{Information provided} & \textbf{Planned use} \\
         \midrule
 
-        \texttt{DeviceType} &
-        Device type (mobile/desktop) &
-        Generate device types, with proportions adjusted if necessary to better reflect PaySim's mobile money environment. \\
+        \texttt{DeviceType} & Device type (mobile/desktop) & Generate device types, with proportions adjusted if necessary to better reflect PaySim's mobile money environment. \\
 
         \addlinespace
 
-        \texttt{id\_30} &
-        Operating system and version &
-        Generate operating systems consistent with device types. \\
+        \texttt{id\_30} & Operating system and version & Generate operating systems consistent with device types. \\
 
         \addlinespace
 
-        \texttt{id\_31} &
-        Browser and version &
-        Generate browsers consistent with device types and operating systems. \\
+        \texttt{id\_31} & Browser and version & Generate browsers consistent with device types and operating systems. \\
 
         \addlinespace
 
-        \texttt{DeviceInfo} &
-        Device information, such as model or platform &
-        Add further details to generated device profiles. \\
+        \texttt{DeviceInfo} & Device information, such as model or platform & Add further details to generated device profiles. \\
 
         \addlinespace
 
-        \texttt{id\_33} &
-        Screen resolution &
-        Optionally include additional device characteristics. \\
+        \texttt{id\_33} & Screen resolution & Optionally include additional device characteristics. \\
 
         \addlinespace
 
-        Combinations of device attributes &
-        Observed relationships and frequencies &
-        Generate coherent device profiles rather than sampling each attribute independently. \\
+        Combinations of device attributes & Observed relationships and frequencies & Generate coherent device profiles rather than sampling each attribute independently. \\
 
         \bottomrule
     \end{tabularx}
@@ -199,7 +185,74 @@ The planned use of selected attributes is shown in Table~\ref{tab:ieee_attribute
 
 In addition to device profiles, we plan to introduce a separate synthetic account activity source, including events such as successful and failed logins and device changes. These events will not be generated entirely randomly, but will be partly influenced by the PaySim \texttt{isFraud} label to create more realistic account activity patterns.
 
-\subsubsection{Synthetic data generation methodology}
+\subsubsection{Planned synthetic data generation}
+A synthetic account activity dataset will be generated to provide additional context for PaySim transactions. As mentioned above, the generated data will include structured events, such as successful and failed login attempts and device changes, together with account identifiers, timestamps, and device information. Device profiles will be based on distributions and relationships observed in the IEEE-CIS dataset, while account activity patterns will be generated using simulation assumptions and may be partly influenced by the PaySim isFraud label.
+\begin{table}[htbp]
+    \centering
+    \caption{Proposed schema of synthetic data}
+    \label{tab:synthetic_events_schema}
+    \small
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabularx}{\textwidth}{@{}l l X@{}}
+        \toprule
+        \textbf{Attribute} & \textbf{Data type} & \textbf{Description} \\
+        \midrule
+
+        \texttt{event\_id} & String & Unique event identifier \\
+
+        \addlinespace
+
+        \texttt{account\_id} & String & Account identifier corresponding to \texttt{nameOrig} in PaySim \\
+
+        \addlinespace
+
+        \texttt{step} & Integer & Simulation hour corresponding to the PaySim timeline \\
+
+        \addlinespace
+
+        \texttt{event\_timestamp} & Datetime & Simulated event timestamp \\
+
+        \addlinespace
+
+        \texttt{event\_type} & String (categorical) & \texttt{LOGIN\_SUCCESS}, \texttt{LOGIN\_FAILED}, \texttt{DEVICE\_CHANGE} \\
+
+        \addlinespace
+
+        \texttt{device\_id} & String & Unique device identifier \\
+
+        \addlinespace
+
+        \texttt{device\_type} & String (categorical) & \texttt{mobile}, \texttt{desktop} \\
+
+        \addlinespace
+
+        \texttt{operating\_system} & String & Operating system and version \\
+
+        \addlinespace
+
+        \texttt{browser} & String & Browser and version \\
+
+        \addlinespace
+
+        \texttt{device\_info} & String & Additional device information \\
+
+        \addlinespace
+
+        \texttt{ip\_address} & String & Simulated IP address (optional) \\
+
+        \addlinespace
+
+        \texttt{country} & String & Simulated country (optional) \\
+
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Since most sender accounts in PaySim appear only once, the dataset provides very limited information about individual user behaviour. To address this limitation, we plan to include in the synthetic dataset additional events and attributes for each account previously identified in the IEEE-CIS dataset. These events will represent account activity rather than financial transactions, which are already provided by PaySim.
+
+The volume of synthetic data will depend on the number of PaySim accounts and the number of account activity events generated for each account. Synthetic account activity events and PaySim transactions will be sent to Apache Kafka to simulate real-time data processing. The rate at which events are sent will be configurable, allowing the system to be tested with different amounts of incoming data.
+
+Synthetic events will be divided into historical and streaming data using the same simulation timeline as PaySim.
 
 \section{Infrastructure}
 The solution will be based on Lambda architecture. 
