@@ -123,7 +123,7 @@ This suggests that historical recipient-level features may provide additional co
 
 \subsection{Synthetic data generation}
 \subsubsection{Reference dataset: IEEE-CIS Fraud Detection}
-The IEEE-CIS Fraud Detection dataset is available on Kaggle: \href{https://www.kaggle.com/competitions/ieee-fraud-detection/data?utm_source=chatgpt.com&select=train_transaction.csv}{IEEE-CIS Fraud Detection}. It contains real-world e-commerce transaction records provided by Vesta Corporation. The dataset includes transaction-related features and partially anonymized identity information, such as device characteristics and browser details.
+The IEEE-CIS Fraud Detection dataset is available on Kaggle: \href{https://www.kaggle.com/competitions/ieee-fraud-detection}{IEEE-CIS Fraud Detection}. It contains real-world e-commerce transaction records provided by Vesta Corporation. The dataset includes transaction-related features and partially anonymized identity information, such as device characteristics and browser details.
 
 The analysis takes into considaration two files: the one related to transaction data, containing 590 540 transactions and 394 attributes, and the one associated with identity information, containing 144 233 records and 41 attributes. Identity records are available for only 24.42\% of transactions, meaning that the remaining 75.58\% have no corresponding records in the identity dataset. \\
 
@@ -265,7 +265,7 @@ produced by a rule-based generator with stochastic sampling and include merchant
 together with a per-transaction fraud label (\texttt{Is Fraud?}, about 0.12\% of records). The attributes are
 listed in Table~\ref{tab:tabformer}.
 
-\begin{table}[H][htbp]
+\begin{table}[H]
     \centering
     \caption{Attributes of the IBM TabFormer dataset}
     \label{tab:tabformer}
