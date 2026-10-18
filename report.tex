@@ -34,7 +34,7 @@
 \newpage
 
 \section{Project overview}
-The objective of this project is to design and implement a real-time financial transaction minitoring and unsupervised anomaly detection system using Big Data technologies and machine learning.
+The objective of this project is to design and implement a real-time financial transaction monitoring and unsupervised anomaly detection system using Big Data technologies and machine learning.
 
 The solution will follow a Lambda Architecture. It will combine three different data sources including batch processing of historical financial transactions and stream processing of incoming transaction events. Additionally, synthetically generated account activity data, including login events and device information, will be incorporated to provide more detailed context for anomaly detection. A data generation and ingestion component will publish transaction and account activity events to Apache Kafka, while the data will be stored in MinIO storage.
 
@@ -55,7 +55,7 @@ From the user's perspective, the system will provide the following functionaliti
 
 \section{Data sources and their preliminary investigation}
 \subsection{PaySim -- financial transaction dataset}
-PaySim is a synthetic dataset available on Kaggle: \href{https://www.kaggle.com/datasets/ealaxi/paysim1}{Synthetic Financial Datasets For Fraud Detection} simulating mobile money transactions, generated based on real transaction patterns from a financial service provider. It contains 6 362 620 records and 11 features. Those features and their types are as follow:
+PaySim is a synthetic dataset available on Kaggle: \href{https://www.kaggle.com/datasets/ealaxi/paysim1}{Synthetic Financial Datasets For Fraud Detection} simulating mobile money transactions, generated based on real transaction patterns from a financial service provider. It contains 6 362 620 records and 11 features. Those features and their types are shown in Table~\ref{tab:paysim_dtypes}.
 \begin{table}[H]
     \centering
     \caption{Data types of the PaySim dataset attributes}
@@ -78,8 +78,8 @@ PaySim is a synthetic dataset available on Kaggle: \href{https://www.kaggle.com/
         \bottomrule
     \end{tabular}
 \end{table}
-One simulation step represents one hour, with 743 observed steps spanning approximately 31 days. \\
-The dataset contains two fraud-related fields: isFraud, identifying fraudulent transactions in the simulation, and isFlaggedFraud, representing an existing rule-based detection mechanism. Since the project focuses on unsupervised anomaly detection rather than supervised fraud classification, these labels will not be used as model input features or training targets. The objective is to identify transactions that deviate from typical patterns.
+One simulation step represents one hour, with 743 observed steps spanning approximately 31 days.
+The dataset contains two fraud-related fields: isFraud (identifying fraudulent transactions in the simulation) and isFlaggedFraud (representing an existing rule-based detection mechanism). Since the project focuses on unsupervised anomaly detection rather than supervised fraud classification, these labels will not be used as model input features or training targets. The objective is to identify transactions that deviate from typical patterns.
 
 Preliminary exploratory data analysis revealed no missing values or duplicate records. The dataset contains five transaction types:
 \begin{itemize}
@@ -89,15 +89,15 @@ Preliminary exploratory data analysis revealed no missing values or duplicate re
     \item TRANSFER -- 8.38\% of all transactions,
     \item DEBIT -- 0.65\% of all transactions.
 \end{itemize}
-Transaction amounts are right-skewed, with a median of approximately 74 872 and a mean of 179 862. Significant differences in transaction amounts between transaction types suggest that transaction type should be considered when identifying unusual patterns.
+Transaction amounts are right-skewed, with a median of approximately 74 872 and a mean of 179 862. The skewed distribution is visualized in Figure~\ref{fig:transaction_amounts}. Significant differences in transaction amounts between transaction types suggest that transaction type should be considered when identifying unusual patterns.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{report_plots/transaction_amount_dist.png}
     \caption{Distribution of transaction amounts (log scale)}
-    \label{fig:transaction_types}
+    \label{fig:transaction_amounts}
 \end{figure}
 
-Transaction activity varies over time, with hourly volumes ranging from 2 to 51 352 transactions. A substantial decrease in transaction volume is observed after approximately step 400, indicating a significant change in transaction activity patterns. To ensure that the historical dataset includes observations from both periods, the data will be divided some time after step 400th, e.g. at step 500. Transactions from the first 500 simulation hours will be used as historical batch data, while the remaining transactions will be replayed as a simulated stream. The aim of this approach is to allow the model to learn from different transaction activity patterns.
+Transaction activity varies over time, with hourly volumes ranging from 2 to 51 352 transactions. As it can be seen in Figure~\ref{fig:trans_vol_over_time}, there is a substantial decrease in transaction volume is observed after approximately step 400, indicating a significant change in transaction activity patterns. To ensure that the historical dataset includes observations from both periods, the data will be divided some time after step 400th, e.g. at step 500. Transactions from the first 500 simulation hours will be used as historical batch data, while the remaining transactions will be replayed as a simulated stream. The aim of this approach is to allow the model to learn from different transaction activity patterns.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{report_plots/trans_volume_over_time.png}
@@ -105,7 +105,7 @@ Transaction activity varies over time, with hourly volumes ranging from 2 to 51 
     \label{fig:trans_vol_over_time}
 \end{figure}
 
-The dataset contains 6 353 307 unique senders, indicating that nearly every sender appears only once. Only 814 streaming senders (0.27\%) also appear as senders in the historical dataset. Therefore, it is impossible to create individual sender profiles. Recipient identifiers show greater repetition, particularly for customer accounts (C), which receive an average of 7.36 transactions, compared with approximately one transaction per merchant (M). 
+The dataset contains 6 353 307 unique senders, indicating that nearly every sender appears only once. Only 814 streaming senders (0.27\%) also appear as senders in the historical dataset. Therefore, it is impossible to create individual sender profiles. Recipient identifiers show greater repetition, particularly for customer accounts (C), which receive an average of 7.36 transactions, compared with approximately one transaction per merchant (M). These findings are summarized in Table~\ref{tab:C_R_transactions}.
 \begin{table}[H]
     \centering
     \caption{Customer and recipients transactions}

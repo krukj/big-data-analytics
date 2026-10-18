@@ -4,3 +4,17 @@
 report_compilation_result/
 
 data/
+
+# LaTeX auxiliary files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.log
+*.lof
+*.lot
+*.out
+*.toc
+*.run.xml
+*.synctex.gz
+report.pdf
