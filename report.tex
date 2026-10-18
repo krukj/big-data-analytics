@@ -50,7 +50,20 @@ From the user's perspective, the system will provide the following functionaliti
     \item Anomaly detection analytics and model performance -- users will be able to analyze the results of the anomaly detection system, including alert trends over time. The dashboard will also provide model performance metrics, such as confusion matrices, precision, recall, and F1-score.
 \end{enumerate}
 
-\section{Project diagram with core use-cases}
+
+\section{Business process diagram for the core use-case}
+The core use-case of the system is real-time scoring of an incoming transaction and handling of the resulting alert. 
+
+Figure~\ref{fig:bpmn_core} presents it as a business process across five participants: the transaction source, the ingestion layer, the speed layer, the serving layer and the analyst using the dashboard.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{report_plots/bpmn_core_use_case.png}
+    \caption{Business process diagram of the core use-case: transaction scoring and alert handling}
+    \label{fig:bpmn_core}
+\end{figure}
+
+\section{Data sources and their preliminary investigation}
 
 \section{Data sources and their preliminary investigation}
 \subsection{PaySim -- financial transaction dataset}
