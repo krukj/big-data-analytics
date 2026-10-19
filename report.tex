@@ -56,14 +56,16 @@ From the user's perspective, the system will provide the following functionaliti
 
 
 \section{Business process diagram for the core use-case}
-The core use-case of the system is real-time scoring of an incoming transaction and handling of the resulting alert. 
+\paragraph{Business context.} The system is intended for the fraud team of a mobile money operator. The dominant fraud pattern in this setting is account takeover: an attacker gains access to a customer's account, transfers the balance to another account and cashes it out shortly afterwards. The operator's existing rule-based control catches only a small fraction of such cases, and the fraud team can review only a limited number of alerts per hour. The system therefore ranks incoming transactions by an anomaly score that combines the transaction itself, the account's recent login and device activity, and the history of the receiving account, so that analysts review the most suspicious transfers first and can freeze the destination account before the cash-out takes place.
 
-Figure~\ref{fig:bpmn_core} presents it as a business process across five participants: the transaction source, the ingestion layer, the speed layer, the serving layer and the analyst using the dashboard.
+\paragraph{Actors.} The customer (account holder), the operator's core transaction system (executes transactions and emits events), the anomaly detection system (this project) and the fraud analyst (reviews alerts and decides).
+
+\paragraph{Process.} Figure~\ref{fig:bpmn_core} shows the process from the customer initiating a transaction to the recorded outcome. Transactions below the alert threshold complete without intervention. Alerts are reviewed by the analyst, who verifies with the customer and either freezes the accounts involved and blocks the pending cash-out, or releases the alert. Both decisions are recorded and feed the evaluation metrics on the dashboard.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{report_plots/bpmn_core_use_case.png}
-    \caption{Business process diagram of the core use-case: transaction scoring and alert handling}
+    \includegraphics[width=0.95\textwidth]{report_plots/bpmn_core_use_case.png}
+    \caption{Business process of the core use-case: detecting account-takeover fraud and stopping the cash-out}
     \label{fig:bpmn_core}
 \end{figure}
 
