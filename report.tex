@@ -368,7 +368,7 @@ for low-latency streaming inference and real-time alert generation. The high-lev
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{report_plots/infrastructure_diagram_vertical.png}
+    \includegraphics[width=0.8\textwidth]{report_plots/infrastructure_diagram.png}
     \caption{Data flow and solution architecture}
     \label{fig:architecture_diagram}
 \end{figure}
@@ -377,7 +377,8 @@ for low-latency streaming inference and real-time alert generation. The high-lev
 \subsection{Proposed infrastructure}
 The proposed infrastructure consists of the following components:
 \begin{itemize}
-    \item Ingestion layer -- The system will integrate three primary sources: historical PaySim data (hourly batches), real-time replayed transactions, and synthetic account activity streams. Apache Kafka will serve as a message broker, routing the events to the next layers. The preprocessing component in the Speed layer and Storage component in the Batch layer will act as Kafka consumers.
+    \item Preprocessing -- In this component the first preprocessing of all data sources will be performed (checking data completeness, data cleansing, etc.).
+    \item Ingestion layer -- Apache Kafka will serve as a message broker, routing the events to the next layers. The preprocessing component in the Speed layer and Storage component in the Batch layer will act as Kafka consumers.
     \item Batch layer -- Raw batch data will be stored in MinIO (or SeaweedFS) in Parquet format. Apache Airflow will orchestrate the process of retraining the machine learning model:
     \begin{itemize}
         \item Data will be loaded from the storage and preprocessed using Apache Spark;
