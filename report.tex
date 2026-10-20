@@ -16,17 +16,20 @@
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{array}
+\usepackage{ragged2e}
+\usepackage{booktabs}
 
 \title{
 \Huge Big Data Analytics \\
 \vspace{0.5em}
 \Large Real-time Financial Transaction Anomaly Detection}
 
-\author{Julia Kruk, Barbara Seweryn, Zuzanna Sieńko, Nadia Serafin \\
-\vspace{0.5em}
-\small Team: philodendron white measure \\
-\vspace{0.3em}
-\small Project manager: Nadia Serafin}
+\author{
+    Julia Kruk, Barbara Seweryn, Zuzanna Sieńko, Nadia Serafin \\
+    \vspace{0.5em}
+    \small Team: philodendron white measure \\
+}
+
 \date{October 2026}
 
 \begin{document}
@@ -56,11 +59,14 @@ From the user's perspective, the system will provide the following functionaliti
 
 
 \section{Business process diagram for the core use-case}
-\paragraph{Business context.} The system is intended for the fraud team of a mobile money operator. The dominant fraud pattern in this setting is account takeover: an attacker gains access to a customer's account, transfers the balance to another account and cashes it out shortly afterwards. The operator's existing rule-based control catches only a small fraction of such cases, and the fraud team can review only a limited number of alerts per hour. The system therefore ranks incoming transactions by an anomaly score that combines the transaction itself, the account's recent login and device activity, and the history of the receiving account, so that analysts review the most suspicious transfers first and can freeze the destination account before the cash-out takes place.
+\textbf{Business context}\\ 
+The system is intended for the fraud team of a mobile money operator. The dominant fraud pattern in this setting is account takeover: an attacker gains access to a customer's account, transfers the balance to another account and cashes it out shortly afterwards. The operator's existing rule-based control catches only a small fraction of such cases, and the fraud team can review only a limited number of alerts per hour. The system therefore ranks incoming transactions by an anomaly score that combines the transaction itself, the account's recent login and device activity, and the history of the receiving account, so that analysts review the most suspicious transfers first and can freeze the destination account before the cash-out takes place.\\
 
-\paragraph{Actors.} The customer (account holder), the operator's core transaction system (executes transactions and emits events), the anomaly detection system (this project) and the fraud analyst (reviews alerts and decides).
+\noindent \textbf{Actors}\\ 
+The customer (account holder), the operator's core transaction system (executes transactions and emits events), the anomaly detection system (this project) and the fraud analyst (reviews alerts and decides).
 
-\paragraph{Process.} Figure~\ref{fig:bpmn_core} shows the process from the customer initiating a transaction to the recorded outcome. Transactions below the alert threshold complete without intervention. Alerts are reviewed by the analyst, who verifies with the customer and either freezes the accounts involved and blocks the pending cash-out, or releases the alert. Both decisions are recorded and feed the evaluation metrics on the dashboard.
+\noindent \textbf{Process}\\
+Figure~\ref{fig:bpmn_core} shows the process from the customer initiating a transaction to the recorded outcome. Transactions below the alert threshold complete without intervention. Alerts are reviewed by the analyst, who verifies with the customer and either freezes the accounts involved and blocks the pending cash-out, or releases the alert. Both decisions are recorded and feed the evaluation metrics on the dashboard.
 
 \begin{figure}[H]
     \centering
@@ -437,18 +443,52 @@ Specifically, they will be used for:
 
 \section{Preliminary allocation of tasks and responsibilities}
 
-\begin{table}[htbp]
-    \centering
-    \caption{Preliminary Allocation of Tasks and Responsibilities}
-    \label{tab:task_allocation}
-    \begin{tabularx}{\textwidth}{|l|X|}
-        \hline
-        \textbf{Team Member} & \textbf{Responsibilities} \\ \hline
-        Julia Kruk & System containerization via Docker, streaming real-time transaction data to Apache Kafka, implementing low-latency preprocessing (handling out-of-order events and missing values). \\ \hline
-        Nadia Serafin & Generating synthetic account activity data, building historical data pipelines with Apache Spark, and developing and evaluating the anomaly detection models. \\ \hline
-        Barbara Seweryn & Managing MinIO storage, simulating real-world stream disturbances, and configuring Apache Airflow for automated model re-training. \\ \hline
-        Zuzanna Sieńko & Designing Apache Cassandra tables (Real-Time and Batch Views), executing real-time ML inference, and developing the Streamlit dashboard. \\ \hline
-    \end{tabularx}
+\renewcommand{\arraystretch}{1.4}
+\setlength{\tabcolsep}{5pt}
+
+\begin{table}[H]
+\centering
+\caption{Team responsibilities across project milestones}
+\label{tab:team_responsibilities}
+
+\footnotesize
+
+\begin{tabularx}{\linewidth}{|>{\RaggedRight\arraybackslash}p{2cm}|*{4}{>{\RaggedRight\arraybackslash}X|}}
+\hline
+
+\textbf{\mbox{Team} \mbox{Member}}
+    & \textbf{M1} & \textbf{M2} & \textbf{M3} & \textbf{M4} \\
+    \hline
+
+    \textbf{Julia Kruk}
+    & Defining system infrastructure, investigation of the technologies.
+    & System containerization via Docker, streaming real-time transaction data to Apache Kafka, and implementing low-latency preprocessing (handling out-of-order events and missing values).
+    & Integrating streaming preprocessing with the analytical module and optimizing processing latency.
+    & Finalizing containerization, deployment configuration, and end-to-end integration testing. \\
+    \hline
+
+    \textbf{\mbox{Nadia} \mbox{Serafin}}
+    & Investigating data sources, defining synthetic data assumptions, defining user functionalities.
+    & Generating synthetic account activity data and building historical data pipelines with Apache Spark.
+    & Developing and evaluating anomaly detection models, performing EDA, and selecting evaluation metrics.
+    & Optimizing anomaly detection models and evaluating final analytical results. \\
+    \hline
+
+    \textbf{Barbara Seweryn}
+    & Defining data storage requirements, historical data partitioning, and batch processing assumptions.
+    & Managing MinIO storage, implementing historical data ingestion, and simulating real-world stream disturbances.
+    & Configuring Apache Airflow for automated model re-training and integrating batch processing with the analytical module.
+    & Finalizing automated workflows, validating pipeline reliability, and performing end-to-end testing. \\
+    \hline
+
+    \textbf{Zuzanna Sieńko}
+    & Defining business context and business process diagram. Investigating reserve data source.
+    & Designing Apache Cassandra tables (Real-Time and Batch Views) and preparing data storage for analytical results.
+    & Executing real-time ML inference and developing the Streamlit dashboard.
+    & Finalizing the dashboard, anomaly alerts, and visualizations, and evaluating the solution from a business perspective. \\
+    \hline
+
+\end{tabularx}
 \end{table}
 
 \newpage
