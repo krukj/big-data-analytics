@@ -148,7 +148,7 @@ This suggests that historical recipient-level features may provide additional co
 \subsubsection{Reference dataset: IEEE-CIS Fraud Detection}
 The IEEE-CIS Fraud Detection dataset is available on Kaggle: \href{https://www.kaggle.com/competitions/ieee-fraud-detection}{IEEE-CIS Fraud Detection}. It contains real-world e-commerce transaction records provided by Vesta Corporation. The dataset includes transaction-related features and partially anonymized identity information, such as device characteristics and browser details.
 
-The analysis takes into considaration two files: the one related to transaction data, containing 590 540 transactions and 394 attributes, and the one associated with identity information, containing 144 233 records and 41 attributes. Identity records are available for only 24.42\% of transactions, meaning that the remaining 75.58\% have no corresponding records in the identity dataset. \\
+The analysis takes into consideration two files: the one related to transaction data, containing 590 540 transactions and 394 attributes, and the one associated with identity information, containing 144 233 records and 41 attributes. Identity records are available for only 24.42\% of transactions, meaning that the remaining 75.58\% have no corresponding records in the identity dataset. \\
 
 \noindent \textbf{Data completeness and device characteristics}\\
 Many IEEE-CIS attributes are anonymized. The preliminary analysis focuses on features whose interpretation can be inferred from their names and observed values. Selected attributes include \texttt{DeviceType}, \texttt{DeviceInfo}, \texttt{id\_30} (operating system), \texttt{id\_31} (browser), and \texttt{id\_33} (screen resolution). Additionally, \texttt{TransactionAmt}, \texttt{ProductCD}, and \texttt{isFraud} were included to examine relationships between device characteristics and transaction patterns. \texttt{TransactionID} was used to join the datasets, while \texttt{TransactionDT} provides relative reference transaction timing information.
@@ -433,14 +433,13 @@ Each assumption refers to an element of Figure~\ref{fig:architecture_diagram}.
 
 
 \section{Planned use of GenAI}
-The use of GenAI tools will be limited to non-coding tasks.
-Specifically, they will be used for:
+GenAI tools will be used as a supportive assistance. Specifically, it will be used for:
 \begin{itemize}
     \item help with research;
     \item code assistance to explore implementation alternatives;
     \item styling the dashboard (e.g., CSS);
     \item debugging potential errors;
-    \item grammar imporovement of the report, creating LaTex tables and diagrams.
+    \item grammar improvement of the report, creating LaTex tables and diagrams.
 \end{itemize}
 
 \section{Preliminary allocation of tasks and responsibilities}
