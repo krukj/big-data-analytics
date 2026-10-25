@@ -1,13 +1,7 @@
-FROM python:3.9-slim
-
-RUN pip install --no-cache-dir uv
+FROM python:3.13-slim-trixie
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY . /app
 
 WORKDIR /app
-
-COPY requirements.txt .
-
-RUN uv pip install --system --no-cache-dir -r requirements.txt
-
-COPY . .
-
-CMD ["python", "main.py"]
+RUN uv sync --locked  
+CMD ["uv", "run", "./src/big_data_analytics/generator/stream_generator.py"]
