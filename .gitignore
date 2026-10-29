@@ -5,6 +5,8 @@ report_compilation_result/
 
 data/
 
+logs/
+
 # LaTeX auxiliary files
 *.aux
 *.bbl
