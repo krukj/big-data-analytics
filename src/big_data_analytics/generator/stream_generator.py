@@ -26,30 +26,36 @@ class PaySimStreamProducer:
     def __init__(
         self,
         data_path: str,
+        login_data_path: str,
         latency: int = 10,
-        first_step: int = 500,
-        topic: str = "raw-transactions",
+        first_step: int = 501,
+        transaction_topic: str = "raw-transactions",
+        login_topic: str = "raw-logins"
     ):
         self.data_path = self._check_data_path(data_path)
+        self.login_data_path = self._check_data_path(login_data_path)
+
         self.producer = Producer(
             {
                 "bootstrap.servers": os.getenv("KAFKA_BROKER", "localhost:9092"),
                 "acks": "all",
             }
         )
-        self.topic = topic
+        self.transaction_topic = transaction_topic
+        self.login_topic = login_topic
         self.latency = latency
         self.current_step = first_step
-        self.df = pd.read_csv(self.data_path)
+        self.df = pd.read_parquet(self.data_path)
+        self.login_df = pd.read_parquet(self.login_data_path)
         self.delayed_rows = {}
 
     @staticmethod
     def _check_data_path(data_path: str) -> Path:
-        """Checks if file in data_path is a CSV file"""
+        """Checks if file in data_path is a Parquet file"""
         path = Path(data_path)
-        if path.suffix == ".csv":
+        if path.suffix == ".parquet":
             return path.resolve()
-        raise ValueError(f"File {data_path} is not a CSV file")
+        raise ValueError(f"File {data_path} is not a Parquet file")
 
     def _take_next_stream(self, df) -> pd.DataFrame:
         """Returns filtered dataframe of"""
@@ -81,24 +87,32 @@ class PaySimStreamProducer:
             self.delayed_rows[self.current_step] = []
             logger.info(f"Current step: {self.current_step}")
             current_stream = self._take_next_stream(self.df)
+            current_logins = self._take_next_stream(self.login_df)
             if current_stream.empty:
                 logger.info("No more data in the dataset. Stopping.")
                 break
 
             df_corrupted = self._data_corruption(current_stream)
 
+            for _, row in current_logins.iterrows():
+                clean_row = row.where(pd.notna(row), None).to_dict()
+                self.producer.produce(topic=self.login_topic, value=json.dumps(clean_row))
+
             for _, row in df_corrupted.iterrows():
                 clean_row = row.where(pd.notna(row), None).to_dict()
-                self.producer.produce(topic=self.topic, value=json.dumps(clean_row))
+                self.producer.produce(topic=self.transaction_topic, value=json.dumps(clean_row))
 
             if current_delayed := self.delayed_rows.get(self.current_step - 1, []):
                 for dr in current_delayed:
                     clean_row = dr.where(pd.notna(dr), None).to_dict()
-                    self.producer.produce(topic=self.topic, value=json.dumps(clean_row))
+                    self.producer.produce(topic=self.transaction_topic, value=json.dumps(clean_row))
 
             self.producer.flush()
             logger.info(
-                f"Produced stream of length {len(df_corrupted) + len(current_delayed)}"
+                f"Produced transactions stream of length {len(df_corrupted) + len(current_delayed)} to {self.transaction_topic}"
+            )
+            logger.info(
+                f"Produced logins stream of length {len(current_logins)} to {self.login_topic}"
             )
             time.sleep(self.latency)
             self.current_step += 1
@@ -108,5 +122,7 @@ if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
-    stream_producer = PaySimStreamProducer(data_path=os.getenv("DATA_PATH", "/app/data/raw/paysim_for_streams.csv"))
+    stream_producer = PaySimStreamProducer(
+        data_path=os.getenv("DATA_PATH", "/app/data/raw/paysim_stream.parquet"),
+        login_data_path=os.getenv("LOGIN_DATA_PATH", "/app/data/raw/login_events.parquet"))
     stream_producer.produce()

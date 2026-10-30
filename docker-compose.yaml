@@ -55,8 +55,9 @@ services:
     command: >
       bash -c "
       /opt/kafka/bin/kafka-topics.sh   --bootstrap-server kafka:19092 --create --if-not-exists --topic raw-transactions --partitions 3 --replication-factor 1 &&
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic raw-logins --partitions 3 --replication-factor 1 &&
       /opt/kafka/bin/kafka-topics.sh   --bootstrap-server kafka:19092 --create --if-not-exists --topic preprocessed-transactions --partitions 3 --replication-factor 1 &&
-      echo 'Topics raw-transactions and preprocessed-transactions created.'"
+      echo 'Topics raw-transactions, raw-logins and preprocessed-transactions created.'"
 
   generator:
     build:
@@ -64,7 +65,8 @@ services:
       dockerfile: ./src/big_data_analytics/generator/Dockerfile
     environment:
       - KAFKA_BROKER=kafka:19092
-      - DATA_PATH=/app/data/raw/paysim_for_streams.csv
+      - DATA_PATH=/app/data/raw/paysim_stream.parquet
+      - LOGIN_DATA_PATH=/app/data/raw/login_events.parquet
     volumes:
       - ./data/raw:/app/data/raw
     networks:
