@@ -351,6 +351,7 @@ dependencies = [
     { name = "boto3" },
     { name = "confluent-kafka" },
     { name = "pandas" },
+    { name = "pyarrow" },
 ]
 
 [package.metadata]
@@ -359,6 +360,7 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.43.118" },
     { name = "confluent-kafka", specifier = ">=2.16.0" },
     { name = "pandas", specifier = ">=3.0.6" },
+    { name = "pyarrow", specifier = ">=26.0.0" },
 ]
 
 [[package]]
