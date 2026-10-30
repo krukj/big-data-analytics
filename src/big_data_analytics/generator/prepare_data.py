@@ -15,7 +15,8 @@ LOGIN_SCENARIOS = {
 }
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-RAW_DIR = REPO_ROOT / "data" / "raw"
+RAW_DIR = REPO_ROOT / "data" / "raw-raw"
+STREAM_DIR = REPO_ROOT / "data" / "raw"
 OUTPUT_DIR = REPO_ROOT / "data" / "preprocessed"
 
 def load_data(raw_dir: Path = RAW_DIR) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -304,10 +305,11 @@ def save_data(
         None: Saves three Parquet files to the preprocessed data directory.
     """
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    STREAM_DIR.mkdir(parents=True, exist_ok=True)
 
     batch_df.to_parquet(OUTPUT_DIR / "paysim_batch.parquet", index=False)
-    stream_df.to_parquet(OUTPUT_DIR / "paysim_stream.parquet", index=False)
-    generated_events.to_parquet(OUTPUT_DIR / "login_events.parquet", index=False)
+    stream_df.to_parquet(STREAM_DIR / "paysim_stream.parquet", index=False)
+    generated_events.to_parquet(STREAM_DIR / "login_events.parquet", index=False)
 
 def main() -> None:
     """
