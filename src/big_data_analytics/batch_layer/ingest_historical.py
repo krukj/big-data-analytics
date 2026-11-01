@@ -1,9 +1,8 @@
 import pandas as pd
 import os
-import io
 import boto3
 
-local_csv_path = "data/raw/paysim_data.csv"
+local_parquet_path = "data/preprocessed/paysim_batch.parquet"
 object_name = "paysim/historical_paysim.parquet"
 bucket_name = "historical-data"
 
@@ -14,20 +13,16 @@ s3_client = boto3.client(
     aws_secret_access_key=os.getenv("MINIO_ROOT_PASSWORD", "password123"),
 )
 
-if os.path.exists(local_csv_path):
+if os.path.exists(local_parquet_path):
     try:
-        df = pd.read_csv(local_csv_path)
-        if "step" in df.columns:
-            df_history = df[df["step"] <= 500]
-        else:
-            df_history = df
+        try:
+            s3_client.head_bucket(Bucket=bucket_name)
+        except Exception:
+            s3_client.create_bucket(Bucket=bucket_name)
 
-        #df to parquet
-        parquet_buffer = io.BytesIO()
-        df_history.to_parquet(parquet_buffer, index=False)
-        parquet_buffer.seek(0)
-        print(f"Uploading {object_name} to bucket {bucket_name}...")
-        s3_client.upload_fileobj(parquet_buffer, bucket_name, object_name)
+        s3_client.upload_file(local_parquet_path, bucket_name, object_name)
 
     except Exception as e:
         print(f"error occured: {e}")
+else:
+    print(f"File {local_parquet_path} does not exist. Run prepare_data.py first.")
