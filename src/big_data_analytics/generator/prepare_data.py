@@ -1,40 +1,50 @@
-from pathlib import Path
+import logging
+
 import numpy as np
 import pandas as pd
 
-SPLIT_STEP = 500
-RANDOM_SEED = 42
+from config import (
+    IDENTITY_RAW_FILE,
+    PAYSIM_RAW_FILE,
+    PROCESSED_DIR,
+    RANDOM_SEED,
+    RAW_STREAM_DIR,
+    SPLIT_STEP,
+)
+
 NEAR_WINDOW_HOURS = 6
 
 DEVICE_COLUMNS = ["DeviceType", "id_30", "id_31", "DeviceInfo", "id_33"]
 LOGIN_SCENARIOS = {
     "NORMAL_LOGIN": ["LOGIN_SUCCESS"],
     "SINGLE_FAILURE": ["LOGIN_FAILED", "LOGIN_SUCCESS"],
-    "MULTIPLE_FAILURES": ["LOGIN_FAILED", "LOGIN_FAILED", "LOGIN_FAILED", "LOGIN_SUCCESS"],
+    "MULTIPLE_FAILURES": [
+        "LOGIN_FAILED",
+        "LOGIN_FAILED",
+        "LOGIN_FAILED",
+        "LOGIN_SUCCESS",
+    ],
     "MULTIPLE_LOGINS": ["LOGIN_SUCCESS", "LOGIN_SUCCESS"],
 }
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-RAW_DIR = REPO_ROOT / "data" / "raw-raw"
-STREAM_DIR = REPO_ROOT / "data" / "raw"
-OUTPUT_DIR = REPO_ROOT / "data" / "preprocessed"
+logger = logging.getLogger(__name__)
 
-def load_data(raw_dir: Path = RAW_DIR) -> tuple[pd.DataFrame, pd.DataFrame]:
+
+def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Loads raw PaySim and IEEE-CIS identity datasets.
-
-    Arguments:
-        - raw_dir (Path): Path to the file with data
 
     Returns:
         tuple[pd.DataFrame, pd.DataFrame]: PaySim transactions and IEEE-CIS identity records.
     """
-    paysim_df = pd.read_csv(raw_dir / "paysim_data.csv")
-    identity_df = pd.read_csv(raw_dir / "train_identity.csv", usecols=DEVICE_COLUMNS)
-
+    paysim_df = pd.read_csv(PAYSIM_RAW_FILE)
+    identity_df = pd.read_csv(IDENTITY_RAW_FILE, usecols=DEVICE_COLUMNS)
     return paysim_df, identity_df
 
-def prepare_paysim(paysim_df: pd.DataFrame, split_step: int = SPLIT_STEP) -> tuple[pd.DataFrame, pd.DataFrame]:
+
+def prepare_paysim(
+    paysim_df: pd.DataFrame, split_step: int = SPLIT_STEP
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Adds synthetic transaction timestamps and split PaySim into batch and streaming datasets.
 
@@ -53,7 +63,10 @@ def prepare_paysim(paysim_df: pd.DataFrame, split_step: int = SPLIT_STEP) -> tup
 
     return batch_df, stream_df
 
-def select_accounts(stream_df: pd.DataFrame, n_accounts: int | None = None) -> pd.DataFrame:
+
+def select_accounts(
+    stream_df: pd.DataFrame, n_accounts: int | None = None
+) -> pd.DataFrame:
     """
     Selects streaming accounts and determine their first transaction step.
 
@@ -67,13 +80,15 @@ def select_accounts(stream_df: pd.DataFrame, n_accounts: int | None = None) -> p
     selected_accounts = stream_df["nameOrig"].drop_duplicates()
 
     if n_accounts is not None:
-        selected_accounts = selected_accounts.sample(n=n_accounts, random_state=RANDOM_SEED,)
+        selected_accounts = selected_accounts.sample(
+            n=n_accounts,
+            random_state=RANDOM_SEED,
+        )
 
     stream_subset = stream_df[stream_df["nameOrig"].isin(selected_accounts)].copy()
 
     account_info = (
-        stream_subset
-        .groupby("nameOrig")
+        stream_subset.groupby("nameOrig")
         .agg(
             first_transaction_step=("step", "min"),
             transaction_count=("step", "size"),
@@ -83,6 +98,7 @@ def select_accounts(stream_df: pd.DataFrame, n_accounts: int | None = None) -> p
     )
 
     return account_info
+
 
 def sample_device_profiles(
     identity_df: pd.DataFrame,
@@ -103,13 +119,11 @@ def sample_device_profiles(
     if complete.empty:
         raise ValueError("No complete IEEE-CIS device profiles available")
 
-    profiles = (
-        complete.groupby(DEVICE_COLUMNS)
-        .size()
-        .reset_index(name="count")
-    )
+    profiles = complete.groupby(DEVICE_COLUMNS).size().reset_index(name="count")
     device_type_probs = identity_df["DeviceType"].value_counts(normalize=True)
-    conditional_probs = profiles["count"] / profiles.groupby("DeviceType")["count"].transform("sum")
+    conditional_probs = profiles["count"] / profiles.groupby("DeviceType")[
+        "count"
+    ].transform("sum")
     weights = profiles["DeviceType"].map(device_type_probs) * conditional_probs
     weights = weights.to_numpy(dtype=float, copy=True)
     weights /= weights.sum()
@@ -125,6 +139,7 @@ def sample_device_profiles(
     accounts["device_id"] = [f"D{i:06d}" for i in range(1, len(accounts) + 1)]
 
     return accounts
+
 
 def assign_login_scenarios(accounts_with_devices: pd.DataFrame) -> pd.DataFrame:
     """
@@ -153,7 +168,9 @@ def assign_login_scenarios(accounts_with_devices: pd.DataFrame) -> pd.DataFrame:
     return accounts_with_devices
 
 
-def generate_login_events(accounts_with_devices: pd.DataFrame, split_step: int = SPLIT_STEP) -> pd.DataFrame:
+def generate_login_events(
+    accounts_with_devices: pd.DataFrame, split_step: int = SPLIT_STEP
+) -> pd.DataFrame:
     """
     Generate synthetic login sequences before each account's first streaming transaction.
     - SHORT_ACTIVITY events occur within six hours before the transaction.
@@ -179,7 +196,9 @@ def generate_login_events(accounts_with_devices: pd.DataFrame, split_step: int =
         event_types = LOGIN_SCENARIOS[scenario]
 
         transaction_start = (first_step - 1) * 3600
-        near_start = max(earliest_event_time, transaction_start - NEAR_WINDOW_HOURS * 3600)
+        near_start = max(
+            earliest_event_time, transaction_start - NEAR_WINDOW_HOURS * 3600
+        )
 
         if account["activity_pattern"] == "SHORT_ACTIVITY":
             sequence_window_start = near_start
@@ -218,7 +237,10 @@ def generate_login_events(accounts_with_devices: pd.DataFrame, split_step: int =
 
         total_duration = sum(gaps)
 
-        last_login_time = np.random.randint(sequence_window_start + total_duration, sequence_window_end,)
+        last_login_time = np.random.randint(
+            sequence_window_start + total_duration,
+            sequence_window_end,
+        )
 
         first_event_time = last_login_time - total_duration
         event_times = [first_event_time]
@@ -229,26 +251,26 @@ def generate_login_events(accounts_with_devices: pd.DataFrame, split_step: int =
         for event_order, (event_time, event_type) in enumerate(
             zip(event_times, event_types)
         ):
-            events.append({
-                "account_id": account["account_id"],
-                "device_id": account["device_id"],
-                "activity_pattern": account["activity_pattern"],
-                "login_scenario": scenario,
-                "event_type": event_type,
-                "event_order": event_order,
-                "event_time": event_time,
-            })
+            events.append(
+                {
+                    "account_id": account["account_id"],
+                    "device_id": account["device_id"],
+                    "activity_pattern": account["activity_pattern"],
+                    "login_scenario": scenario,
+                    "event_type": event_type,
+                    "event_order": event_order,
+                    "event_time": event_time,
+                }
+            )
 
     account_events = pd.DataFrame(events)
 
     account_events["step"] = account_events["event_time"] // 3600 + 1
     account_events["second_offset"] = account_events["event_time"] % 3600
 
-    account_events = (
-        account_events
-        .sort_values(["event_time", "account_id", "event_order"])
-        .reset_index(drop=True)
-    )
+    account_events = account_events.sort_values(
+        ["event_time", "account_id", "event_order"]
+    ).reset_index(drop=True)
 
     generated_events = account_events.merge(
         accounts_with_devices[["account_id"] + DEVICE_COLUMNS],
@@ -257,8 +279,7 @@ def generate_login_events(accounts_with_devices: pd.DataFrame, split_step: int =
     )
 
     generated_events["event_id"] = [
-        f"E{i:07d}"
-        for i in range(1, len(generated_events) + 1)
+        f"E{i:07d}" for i in range(1, len(generated_events) + 1)
     ]
 
     generated_events = generated_events[
@@ -278,19 +299,22 @@ def generate_login_events(accounts_with_devices: pd.DataFrame, split_step: int =
         ]
     ].copy()
 
-    generated_events = generated_events.rename(columns={
-        "DeviceType": "device_type",
-        "id_30": "operating_system",
-        "id_31": "browser",
-        "DeviceInfo": "device_info",
-        "id_33": "screen_resolution",
-    })
+    generated_events = generated_events.rename(
+        columns={
+            "DeviceType": "device_type",
+            "id_30": "operating_system",
+            "id_31": "browser",
+            "DeviceInfo": "device_info",
+            "id_33": "screen_resolution",
+        }
+    )
 
     return generated_events
 
+
 def save_data(
-    batch_df: pd.DataFrame, 
-    stream_df: pd.DataFrame, 
+    batch_df: pd.DataFrame,
+    stream_df: pd.DataFrame,
     generated_events: pd.DataFrame,
 ) -> None:
     """
@@ -304,18 +328,22 @@ def save_data(
     Returns:
         None: Saves three Parquet files to the preprocessed data directory.
     """
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    STREAM_DIR.mkdir(parents=True, exist_ok=True)
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    RAW_STREAM_DIR.mkdir(parents=True, exist_ok=True)
 
-    batch_df.to_parquet(OUTPUT_DIR / "paysim_batch.parquet", index=False)
-    stream_df.to_parquet(STREAM_DIR / "paysim_stream.parquet", index=False)
-    generated_events.to_parquet(STREAM_DIR / "login_events.parquet", index=False)
+    batch_df.to_parquet(PROCESSED_DIR / "paysim_batch.parquet", index=False)
+    stream_df.to_parquet(RAW_STREAM_DIR / "paysim_stream.parquet", index=False)
+    generated_events.to_parquet(RAW_STREAM_DIR / "login_events.parquet", index=False)
+
 
 def main() -> None:
     """
     Prepares PaySim datasets and generate streaming login events.
     """
     np.random.seed(RANDOM_SEED)
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
     paysim_df, identity_df = load_data()
     batch_df, stream_df = prepare_paysim(paysim_df, SPLIT_STEP)
@@ -325,11 +353,12 @@ def main() -> None:
     generated_events = generate_login_events(accounts_with_devices, SPLIT_STEP)
     save_data(batch_df, stream_df, generated_events)
 
-    print(f"Batch transactions: {len(batch_df)}")
-    print(f"Streaming transactions: {len(stream_df)}")
-    print(f"Accounts with synthetic activity: {len(account_info)}")
-    print(f"Generated login events: {len(generated_events)}")
-    print(f"Saved files to: {OUTPUT_DIR}")
+    logger.info(f"Batch transactions: {len(batch_df)}")
+    logger.info(f"Streaming transactions: {len(stream_df)}")
+    logger.info(f"Accounts with synthetic activity: {len(account_info)}")
+    logger.info(f"Generated login events: {len(generated_events)}")
+    logger.info(f"Saved files to: {PROCESSED_DIR}")
+
 
 if __name__ == "__main__":
     main()

@@ -6,7 +6,8 @@ report_compilation_result/
 data/
 
 logs/
-
+plugins/
+__pycache__/
 # LaTeX auxiliary files
 *.aux
 *.bbl

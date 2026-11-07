@@ -4,4 +4,5 @@ COPY . /app
 
 WORKDIR /app
 RUN uv sync --locked  
+ENV PYTHONPATH=/app
 CMD ["uv", "run", "./src/big_data_analytics/generator/stream_generator.py"]

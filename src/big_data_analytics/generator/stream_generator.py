@@ -1,12 +1,21 @@
 import json
 import logging
-import os
 import random
 import time
 from pathlib import Path
 
 import pandas as pd
 from confluent_kafka import Producer
+
+from config import (
+    FIRST_STEP,
+    KAFKA_BROKER,
+    LATENCY,
+    LOGIN_PARQUET,
+    LOGIN_TOPIC,
+    STREAM_PARQUET,
+    TRANSACTION_TOPIC,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,22 +31,22 @@ COLS = [
 ]
 
 
-class PaySimStreamProducer:
+class StreamProducer:
     def __init__(
         self,
-        data_path: str,
-        login_data_path: str,
-        latency: int = 10,
-        first_step: int = 501,
-        transaction_topic: str = "raw-transactions",
-        login_topic: str = "raw-logins"
+        data_path: str = STREAM_PARQUET,
+        login_data_path: str = LOGIN_PARQUET,
+        latency: int = LATENCY,
+        first_step: int = FIRST_STEP,
+        transaction_topic: str = TRANSACTION_TOPIC,
+        login_topic: str = LOGIN_TOPIC,
     ):
-        self.data_path = self._check_data_path(data_path)
+        self.paysim_data_path = self._check_data_path(data_path)
         self.login_data_path = self._check_data_path(login_data_path)
 
         self.producer = Producer(
             {
-                "bootstrap.servers": os.getenv("KAFKA_BROKER", "localhost:9092"),
+                "bootstrap.servers": KAFKA_BROKER,
                 "acks": "all",
             }
         )
@@ -45,7 +54,7 @@ class PaySimStreamProducer:
         self.login_topic = login_topic
         self.latency = latency
         self.current_step = first_step
-        self.df = pd.read_parquet(self.data_path)
+        self.df = pd.read_parquet(self.paysim_data_path)
         self.login_df = pd.read_parquet(self.login_data_path)
         self.delayed_rows = {}
 
@@ -96,16 +105,22 @@ class PaySimStreamProducer:
 
             for _, row in current_logins.iterrows():
                 clean_row = row.where(pd.notna(row), None).to_dict()
-                self.producer.produce(topic=self.login_topic, value=json.dumps(clean_row))
+                self.producer.produce(
+                    topic=self.login_topic, value=json.dumps(clean_row)
+                )
 
             for _, row in df_corrupted.iterrows():
                 clean_row = row.where(pd.notna(row), None).to_dict()
-                self.producer.produce(topic=self.transaction_topic, value=json.dumps(clean_row))
+                self.producer.produce(
+                    topic=self.transaction_topic, value=json.dumps(clean_row)
+                )
 
             if current_delayed := self.delayed_rows.get(self.current_step - 1, []):
                 for dr in current_delayed:
                     clean_row = dr.where(pd.notna(dr), None).to_dict()
-                    self.producer.produce(topic=self.transaction_topic, value=json.dumps(clean_row))
+                    self.producer.produce(
+                        topic=self.transaction_topic, value=json.dumps(clean_row)
+                    )
 
             self.producer.flush()
             logger.info(
@@ -122,7 +137,5 @@ if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
-    stream_producer = PaySimStreamProducer(
-        data_path=os.getenv("DATA_PATH", "/app/data/raw/paysim_stream.parquet"),
-        login_data_path=os.getenv("LOGIN_DATA_PATH", "/app/data/raw/login_events.parquet"))
+    stream_producer = StreamProducer()
     stream_producer.produce()
