@@ -1,6 +1,7 @@
 # Real-time Financial Transaction Anomaly Detection
 
 ## Set up 
+0. Create `.env` file based on `.env.template`
 1. Before running, you should have these files in `big-data-analytics/data/raw_kaggle/`: 
 - `paysim_data.csv` 
 - `train_identity.csv`
