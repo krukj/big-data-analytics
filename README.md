@@ -26,6 +26,7 @@ docker compose up -d
 - Airflow: [http://localhost:8082](http://localhost:8082)
 - Spark: [http://localhost:8083](http://localhost:8083)
 - Silo (Minio): [http://localhost:9001](http://localhost:9001)
+- Cassandra: [http://localhost:3000](http://localhost:3000)
 
 
 
