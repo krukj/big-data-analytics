@@ -102,6 +102,55 @@ services:
     depends_on:
       - minio
 
+  cassandra:
+    image: cassandra:5.0
+    container_name: cassandra
+    profiles: ["serving"]
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: fraud-detection
+      MAX_HEAP_SIZE: 1G
+      HEAP_NEWSIZE: 200M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    networks:
+      - kafka-network
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+
+  cassandra-init:
+    image: cassandra:5.0
+    container_name: cassandra-init
+    profiles: ["serving"]
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./src/big_data_analytics/serving_layer/schema.cql:/schema.cql:ro
+    networks:
+      - kafka-network
+    command: ["cqlsh", "cassandra", "9042", "-f", "/schema.cql"]
+
+  cassandra-web:
+    image: ipushc/cassandra-web
+    container_name: cassandra-web
+    profiles: ["serving"]
+    ports:
+      - "3000:8083"
+    environment:
+      CASSANDRA_HOST: cassandra
+      CASSANDRA_PORT: 9042
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    networks:
+      - kafka-network
+
   postgres:
     image: postgres:16
     environment:
@@ -241,6 +290,7 @@ volumes:
   kafka-data:
   minio_data:
   postgres-db-volume:
+  cassandra_data:
   
 
 networks:
