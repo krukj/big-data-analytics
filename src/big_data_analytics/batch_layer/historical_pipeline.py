@@ -3,6 +3,11 @@ import logging
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as sf
 
+from config import (
+    MINIO_PASSWORD,
+    MINIO_USER,
+)
+
 logger = logging.getLogger(__name__)
 
 class HistoricalPipeline:
@@ -87,20 +92,44 @@ class HistoricalPipeline:
             .agg(
                 sf.count("*").alias("transaction_count"),
                 sf.sum("amount").alias("total_amount"),
-                sf.avg("amount").alias("avg_amount")
+                sf.avg("amount").alias("avg_amount"),
+                sf.expr("percentile_approx(amount, 0.5)").alias("median_amount"),
+                sf.max("amount").alias("max_amount")
             )
             .orderBy("step")
         )
 
-        logger.info("Historical data aggregation completed")
-        return hourly_stats
+        hourly_type_stats = (
+            df.groupBy("step", "type")
+            .agg(
+                sf.count("*").alias("transaction_count"),
+                sf.sum("amount").alias("total_amount"),
+                sf.avg("amount").alias("avg_amount")
+            )
+            .orderBy("step", "type")
+        )
 
-    def save_data(self, df, hourly_stats):
+        type_stats = (
+            df.groupBy("type")
+            .agg(
+                sf.count("*").alias("transaction_count"),
+                sf.sum("amount").alias("total_amount"),
+                sf.avg("amount").alias("avg_amount")
+            )
+            .orderBy("type")
+        )
+
+        logger.info("Historical data aggregation completed")
+        return hourly_stats, hourly_type_stats, type_stats
+
+    def save_data(self, df, hourly_stats, hourly_type_stats, type_stats):
         logger.info("Saving processed historical data")
 
-        df.write.mode("overwrite").parquet("s3a://processed-data/paysim/transactions/")
-        hourly_stats.write.mode("overwrite").parquet("s3a://processed-data/paysim/hourly_stats/")
-
+        base_path = "s3a://processed-data/paysim"
+        df.write.mode("overwrite").parquet(f"{base_path}/transactions/")
+        hourly_stats.write.mode("overwrite").parquet(f"{base_path}/hourly_stats/")
+        hourly_type_stats.write.mode("overwrite").parquet(f"{base_path}/hourly_type_stats/")
+        type_stats.write.mode("overwrite").parquet(f"{base_path}/type_stats/")
         logger.info("Processed historical data saved")
 
     def run(self):
@@ -109,12 +138,8 @@ class HistoricalPipeline:
         df = self.read_data()
         self.validate_data(df)
         df = self.engineer_features(df)
-
-        hourly_stats = self.aggregate_data(df)
-        logger.info("Hourly statistics:")
-        hourly_stats.show(10, truncate=False)
-
-        self.save_data(df, hourly_stats)
+        hourly_stats, hourly_type_stats, type_stats = self.aggregate_data(df)
+        self.save_data(df, hourly_stats, hourly_type_stats, type_stats)
 
         logger.info("Historical pipeline completed")
 
@@ -128,8 +153,8 @@ def main():
         .appName("HistoricalPaySimPipeline")
         .master("spark://spark-master:7077")
         .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000")
-        .config("spark.hadoop.fs.s3a.access.key", "admin")
-        .config("spark.hadoop.fs.s3a.secret.key", "password123")
+        .config("spark.hadoop.fs.s3a.access.key", MINIO_USER)
+        .config("spark.hadoop.fs.s3a.secret.key", MINIO_PASSWORD)
         .config("spark.hadoop.fs.s3a.path.style.access", "true")
         .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
         .getOrCreate()
