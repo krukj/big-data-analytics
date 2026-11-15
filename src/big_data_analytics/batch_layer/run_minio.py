@@ -22,7 +22,12 @@ s3_client = boto3.client(
     aws_access_key_id=MINIO_USER,
     aws_secret_access_key=MINIO_PASSWORD,
 )
-bucket_names = ["historical-data", "clean-transactions-data", "clean-logins-data"]
+bucket_names = [
+    "historical-data", 
+    "clean-transactions-data", 
+    "clean-logins-data",
+    "processed-data",
+]
 
 for bn in bucket_names:
     try:
