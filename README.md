@@ -9,6 +9,11 @@
 ```bash
 PYTHONPATH=. uv run src/big_data_analytics/generator/prepare_data.py
 ```
+or for Windows PowerShell:
+```bash
+$env:PYTHONPATH="."
+uv run src/big_data_analytics/generator/prepare_data.py
+```
 to create `parquet` files.
 
 3. Run Docker deamon (open Docker app) and start containers: 
