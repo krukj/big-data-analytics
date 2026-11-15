@@ -77,6 +77,7 @@ Figure~\ref{fig:bpmn_core} shows the process from the customer initiating a tran
 
 
 \section{Data sources and their preliminary investigation}
+\label{section:data_sources}
 \subsection{PaySim -- financial transaction dataset}
 PaySim is a synthetic dataset available on Kaggle: \href{https://www.kaggle.com/datasets/ealaxi/paysim1}{Synthetic Financial Datasets For Fraud Detection} simulating mobile money transactions, generated based on real transaction patterns from a financial service provider. It contains 6 362 620 records and 11 features. Those features and their types are shown in Table~\ref{tab:paysim_dtypes}.
 \begin{table}[H]
@@ -492,6 +493,37 @@ GenAI tools will be used as a supportive assistance. Specifically, it will be us
 
 \end{tabularx}
 \end{table}
+
+
+\section{Updates to PM1 Report}
+
+The updates to the PM1 report include the following changes:
+\begin{itemize}
+    \item Instead of using the official MinIO server, we decided to use the pgsty/silo substitute. It is fully compatible with API S3 interface, while also deploying faster and being more lightweight. This change was made, because of problem with MinIO public pull policy for free accounts, which blocked fetching of MinIO latest image from Docker Hub. 
+    \item ?
+\end{itemize}
+
+
+\section{Conceptual Data Model}
+
+
+\section{Description of Data Sets}
+The data sets have already been described in Section~\ref{section:data_sources}. The PaySim dataset is used as the primary source of transaction data, while the IEEE-CIS dataset serves as a reference for generating synthetic device information. The IBM TabFormer dataset is reserved for potential use if the primary sources prove insufficient.
+
+\section{Data Acquisition and Transformation}
+
+
+\section{System Architecture}
+
+
+\section{Analytical Approach}
+In the final dashboard user will be able to monitor real-time transaction activity, review historical statistics, and investigate the incoming transactions that has been labeled as suspicious by the anomaly detection model. 
+
+To detect suspicious transactions, we will use an unsupervised anomaly detection model. The model will be trained on historical data and when a new batch of data is received, it will be retrained incrementally. This way the model will adapt to possible changes in the data distribution, i.e concept drift. The new, retrained model will then replace the previous model, and the predictions for the new transactions will be generated using the latest model. To avoid prediction latency during the training of the new model, a shadow model approach will be used (the previous model will still be used to generate predictions for incoming transactions and only when the re-training is completed, the new model will replace the previous one).
+When a new transaction is processed, the model will assign an anomaly score to it based on how much it deviates from the learned patterns. If the score exceeds a predefined threshold, the transaction will be flagged as suspicious and an alert will be generated for further investigation. 
+
+Following this approach, the batch layer will be responsible for training the model on historical data and retraining the model periodically on new batches of data, while in the speed layer predictions for incoming transactions will be made and suspicious transactions will be flagged. 
+
 
 \newpage
 % ----------------------------  LIST OF FIGURES --------------------------------
