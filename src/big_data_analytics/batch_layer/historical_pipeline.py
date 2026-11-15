@@ -58,11 +58,63 @@ class HistoricalPipeline:
 
         logger.info("Historical data validation completed")
 
+    def engineer_features(self, df):
+        logger.info("Starting feature engineering")
+
+        df = (
+            df
+            .withColumn("amount_log", sf.log1p(sf.col("amount")))
+            .withColumn("hour_of_day", (sf.col("step") - 1) % 24)
+            .withColumn("day", sf.floor((sf.col("step") - 1) / 24) + 1)
+            .withColumn("orig_balance_diff", sf.col("oldbalanceOrg") - sf.col("newbalanceOrig"))
+            .withColumn("dest_balance_diff", sf.col("newbalanceDest") - sf.col("oldbalanceDest"))
+            .withColumn("amount_to_balance_ratio",
+                sf.when(
+                    sf.col("oldbalanceOrg") > 0,
+                    sf.col("amount") / sf.col("oldbalanceOrg")
+                ).otherwise(None)
+            )
+        )
+
+        logger.info("Feature engineering completed")
+        return df
+
+    def aggregate_data(self, df):
+        logger.info("Starting historical data aggregation")
+
+        hourly_stats = (
+            df.groupBy("step")
+            .agg(
+                sf.count("*").alias("transaction_count"),
+                sf.sum("amount").alias("total_amount"),
+                sf.avg("amount").alias("avg_amount")
+            )
+            .orderBy("step")
+        )
+
+        logger.info("Historical data aggregation completed")
+        return hourly_stats
+
+    def save_data(self, df, hourly_stats):
+        logger.info("Saving processed historical data")
+
+        df.write.mode("overwrite").parquet("s3a://processed-data/paysim/transactions/")
+        hourly_stats.write.mode("overwrite").parquet("s3a://processed-data/paysim/hourly_stats/")
+
+        logger.info("Processed historical data saved")
+
     def run(self):
         logger.info("Starting historical pipeline")
 
         df = self.read_data()
         self.validate_data(df)
+        df = self.engineer_features(df)
+
+        hourly_stats = self.aggregate_data(df)
+        logger.info("Hourly statistics:")
+        hourly_stats.show(10, truncate=False)
+
+        self.save_data(df, hourly_stats)
 
         logger.info("Historical pipeline completed")
 
