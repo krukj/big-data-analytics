@@ -1,6 +1,6 @@
 import logging
 
-from pyspark.sql import SparkSession
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as sf
 
 from config import (
@@ -11,14 +11,14 @@ from config import (
 logger = logging.getLogger(__name__)
 
 class HistoricalPipeline:
-    def __init__(self, spark):
+    def __init__(self, spark: SparkSession) -> None:
         self.spark = spark
         self.data_path = "s3a://historical-data/paysim/historical_paysim.parquet"
 
-    def read_data(self):
+    def read_data(self) -> DataFrame:
         return self.spark.read.parquet(self.data_path)
 
-    def validate_data(self, df):
+    def validate_data(self, df: DataFrame):
         logger.info("Starting historical data validation")
 
         required_columns = [
@@ -63,7 +63,7 @@ class HistoricalPipeline:
 
         logger.info("Historical data validation completed")
 
-    def engineer_features(self, df):
+    def engineer_features(self, df: DataFrame) -> DataFrame:
         logger.info("Starting feature engineering")
 
         df = (
@@ -84,7 +84,7 @@ class HistoricalPipeline:
         logger.info("Feature engineering completed")
         return df
 
-    def aggregate_data(self, df):
+    def aggregate_data(self, df: DataFrame) -> tuple[DataFrame, DataFrame, DataFrame]:
         logger.info("Starting historical data aggregation")
 
         hourly_stats = (
@@ -122,7 +122,13 @@ class HistoricalPipeline:
         logger.info("Historical data aggregation completed")
         return hourly_stats, hourly_type_stats, type_stats
 
-    def save_data(self, df, hourly_stats, hourly_type_stats, type_stats):
+    def save_data(
+        self, 
+        df: DataFrame, 
+        hourly_stats: DataFrame, 
+        hourly_type_stats: DataFrame, 
+        type_stats: DataFrame,
+    ) -> None:
         logger.info("Saving processed historical data")
 
         base_path = "s3a://processed-data/paysim"
