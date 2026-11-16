@@ -500,18 +500,168 @@ GenAI tools will be used as a supportive assistance. Specifically, it will be us
 The updates to the PM1 report include the following changes:
 \begin{itemize}
     \item Instead of using the official MinIO server, we decided to use the pgsty/silo substitute. It is fully compatible with API S3 interface, while also deploying faster and being more lightweight. This change was made, because of problem with MinIO public pull policy for free accounts, which blocked fetching of MinIO latest image from Docker Hub. 
-    \item ?
+    \item We generated successful and failed login events using device information from IEEE-CIS. Four login scenarios and two activity patterns were added. The generated data was saved in Parquet format.
+    \item We added \texttt{second\_offset} and \texttt{event\_time} to place transactions and login events on the same timeline.
+    \item PaySim was split into historical and streaming data. The data was saved in Parquet format, and Apache Spark was used to check, transform, and summarize historical transactions
 \end{itemize}
 
 
 \section{Conceptual Data Model}
+The system combines financial transactions from PaySim with synthetically generated account activity events and device information. Although the data is organised into three parts, historical transactions, streaming transactions, and login event, in the conceptual data model consists one can distinguish four main entities: Account, Transaction, Login Event, and Device. 
+
+Historical and streaming transactions represent the same entity, \textit{Transaction}, as they share a common structure and differ only in their role within the processing architecture. Each transaction involves a source and a destination \textit{Account}. \textit{Login Events} are associated with accounts through the \texttt{account\_id} attribute, which corresponds to \texttt{nameOrig} in PaySim. Each login event also contains a device identifier and its characteristics, represented conceptually by the \textit{Device} entity.
+
+The relationships between these entities is shown in Figure~\ref{fig:conceptual_data_model}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{report_plots/conceptual_data_model.png}
+    \caption{Conceptual data model of financial transactions, accounts, login events, and devices.}
+    \label{fig:conceptual_data_model}
+\end{figure}
 
 
 \section{Description of Data Sets}
-The data sets have already been described in Section~\ref{section:data_sources}. The PaySim dataset is used as the primary source of transaction data, while the IEEE-CIS dataset serves as a reference for generating synthetic device information. The IBM TabFormer dataset is reserved for potential use if the primary sources prove insufficient.
+\label{section:data_sets_description}
+The PaySim dataset is used as the primary source of transaction data, while the IEEE-CIS dataset serves as a reference for generating synthetic device information. The IBM TabFormer dataset is reserved for potential use if the primary sources prove insufficient.
+\subsection{PaySim Transaction Data}
+The dataset was described in Section~\ref{section:data_sources}. The dataset was extended with two additional temporal attributes, \texttt{second\_offset} and \texttt{event\_time} and divided into historical (steps 1-500) and streaming (steps 501-743) subsets. Both subsets were saved in Parquet format for further processing.
+
+The prepared PaySim datasets contain the original 11 PaySim attributes and two additional temporal attributes, as presented in Table~\ref{tab:paysim_data_description}.
+
+The additional temporal attributes provide a common time representation for financial transactions and synthetically generated login events. The \texttt{second\_offset} attribute was set to zero for all PaySim transactions, as the original dataset provides only hourly time steps. The \texttt{event\_time} attribute was calculated as $(\text{step} - 1) \times 3600$, representing the transaction time in seconds relative to the beginning of the simulation. These attributes allow login events to be assigned more precise timestamps, "inside" the hours (steps), while maintaining temporal consistency with PaySim transactions.
+
+The original \texttt{isFraud} and \texttt{isFlaggedFraud} attributes were kept in the prepared datasets. However, they are not intended to be used as input features for the unsupervised anomaly detection models. Instead, they will be used for evaluating the detection results against the available fraud-related labels.
+
+\begin{table}[H]
+    \centering
+    \caption{Attributes of the prepared PaySim transaction datasets.}
+    \label{tab:paysim_data_description}
+    \small
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Attribute} & \textbf{Data type} & \textbf{Description}\\
+        \midrule
+        step & Integer & Simulation time step, where each step represents one hour.\\
+        type & String (categorical) & Transaction type: CASH\_IN, CASH\_OUT, DEBIT, PAYMENT, TRANSFER.\\
+        amount & Float & Transaction amount.\\
+        nameOrig & String & Identifier of the source account. \\
+        oldbalanceOrg & Float & Source account balance before the transaction.\\
+        newbalanceOrig & Float & Source account balance after the transaction. \\
+        nameDest & String & Identifier of the destination account. \\
+        oldbalanceDest & Float & Destination account balance before the transaction.\\
+        newbalanceDest & Float & Destination account balance after the transaction. \\
+        isFraud & Integer & Binary label indicating whether the transaction is fraudulent. \\
+        isFlaggedFraud & Integer & Binary indicator of transactions flagged by PaySim's built-in detection rule. \\
+        second\_offset & Integer & Number of seconds that have passed within a given simulation step. \\
+        event\_time & Integer &Nnumber of seconds that have passed since the simulation began. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Synthetic Login Events}
+\subsubsection{Synthetic Login Events - description}
+As stated in Section~\ref{section:data_sources}, synthetic account activity data was introduced to enrich PaySim transactions with additional information about user behavior and devices.
+
+Synthetic login events were generated exclusively for the streaming period (steps 501–743). Each event contains an account identifier, an event type, a device identifier, device characteristics, and temporal attributes. The dataset was saved in Parquet format. The attributes are preented below in Table~\ref{tab:login_data_description}.
+
+\begin{table}[H]
+    \centering
+    \caption{Attributes of the synthetic login event dataset.}
+    \label{tab:login_data_description}
+    \small
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Attribute} & \textbf{Data type} & \textbf{Description}\\
+        \midrule
+        event\_id & String & Unique identifier of the generated login event.\\
+        account\_id & String & Identifier of the associated PaySim source account (nameOrig).\\
+        device\_id & String & Identifier of the device assigned to the account.\\
+        event\_type & String (categorical) & Login event type: LOGIN\_SUCCESS or LOGIN\_FAILED.\\
+        step & Integer & PaySim simulation step corresponding to the event.\\
+        second\_offset & Integer & Number of seconds elapsed within the simulation step.\\
+        event\_time & Integer & Number of seconds elapsed since the beginning of the simulation.\\
+        device\_type & String (categorical) & Device category, such as desktop or mobile.\\
+        operating\_system & String & Operating system associated with the device.\\
+        browser & String & Browser associated with the device.\\
+        device\_info & String & Additional device information obtained from IEEE-CIS.\\
+        screen\_resolution & String & Screen resolution associated with the device.\\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Login events are assigned timestamps with second-level precision, allowing multiple events to occur within a single simulation step and enabling their chronological ordering relative to financial transactions. Each account with generated login activity is assigned a single device identifier and a consistent set of device characteristics. The dataset contains only complete device profiles selected from IEEE-CIS, avoiding missing values in the five device attributes used for generation. The generated records are also linked to existing PaySim source accounts through \texttt{account\_id}.
+
+\subsubsection{Synthetic Login Events - generation process}
+The generation process consisted of the following steps:
+\begin{enumerate}
+    \item Account selection - all accounts from the streaming transaction PaySim dataset were selected for synthetic login event generation. The implementation also supports selecting a smaller sample of accounts for testing purposes. For each selected account, the first transaction step is determined to ensure that login events were generated before the associated transaction.
+    \item Device profile selection and assignment - five device attributes were selected from the IEEE-CIS identity dataset: \texttt{DeviceType} (device category), \texttt{id\_30} (operating system), \texttt{id\_31} (browser), \texttt{DeviceInfo} (additional device information), and \texttt{id\_33} (screen resolution).\\
+    Records containing missing values in any of these attributes were excluded. Unique complete device profiles were identified along with their frequencies.\\
+    To preserve the original proportions of device types, profiles were sampled based on two factors: the frequency of each device type in the original dataset and the frequency of each complete profile within that device type:
+    \[
+        P(p_i) = P(d_i) \cdot P(p_i \mid d_i)
+    \]
+    where $P(p_i)$ is the sampling probability of device profile $p_i$, $P(d_i)$ is the proportion of device type $d_i$ in the original dataset (excluding records with unknown device types), and $P(p_i \mid d_i)$ is the relative frequency of profile $p_i$ among complete profiles of that device type.\\
+    The resulting weights were normalized to sum to one. Each selected account was then assigned one sampled device profile and a unique \texttt{device\_id}.
+    \item Login scenario and activity pattern assignment - each account was randomly assigned one of four login scenarios: NORMAL\_LOGIN (65\%), SINGLE\_FAILURE (20\%), MULTIPLE\_FAILURES (5\%), or MULTIPLE\_LOGINS (10\%). Additionally, one of two activity patterns was assigned: SHORT\_ACTIVITY (70\%) or MIXED\_ACTIVITY (30\%). The login scenario determined the sequence of successful and failed login attempts, while the activity pattern determined their temporal distribution.
+    \item Login event generation - login sequences were generated before each account's first streaming transaction. For SHORT\_ACTIVITY, events were placed within the preceding six hours. For MIXED\_ACTIVITY, events were usually generated within the same six-hour window (80\% probability), but could also occur earlier in the streaming period (20\% probability). Accounts whose first transaction occurred in the first streaming step were excluded from event generation.
+    \item Timestamp calculation - each generated login event received an \texttt{event\_time} value representing seconds passed since the beginning of the simulation. The corresponding \texttt{step} and \texttt{second\_offset} were calculated from this timestamp. To maintain consistency with the prepared transaction data, where all transactions were assigned to the beginning of their simulation steps (\texttt{second\_offset} = 0), login events were assigned timestamps with second-level precision, ensuring that they occurred before each account's first transaction.
+\end{enumerate}
 
 \section{Data Acquisition and Transformation}
+\subsection{Data Acquisition and Preparation}
+Data acquisition and preparation were implemented in Python using Pandas and NumPy. The PaySim and IEEE-CIS datasets were loaded from CSV files and prepared as described in Section~\ref{section:data_sets_description}. The resulting datasets were saved in Parquet format: \texttt{paysim\_batch.parquet} for historical processing, and \texttt{paysim\_stream.parquet} and \texttt{login\_events.parquet} for streaming simulation. Parquet was selected as a columnar storage format suitable for efficient data processing with Apache Spark.
 
+\subsection{Streaming Data Simulation and Kafka Ingestion}
+
+\subsection{Historical Data Processing with Apache Spark}
+A historical data processing pipeline was implemented using PySpark to validate, transform, and aggregate transaction data. The pipeline consists of the following stages:
+\begin{enumerate}
+    \item Data loading - historical transaction data is loaded from MinIO in Parquet format using Apache Spark and the S3A connector.
+    \item Data validation - the pipeline checks the presence of required columns and identifies missing values, negative transaction amounts, invalid transaction types, and simulation steps outside the historical data range (1–500). Validation results are logged for inspection.
+    \item Feature engineering - six additional features are calculated to provide information about transaction amounts, account balances, and temporal patterns:
+    \begin{table}[H]
+    \centering
+    \caption{Features generated during historical data processing.}
+    \label{tab:historical_features}
+    \small
+    \begin{tabular}{lp{9cm}}
+        \toprule
+        \textbf{Feature} & \textbf{Description}\\
+        \midrule
+        amount\_log & Logarithmic transformation of the transaction amount using log1p.\\
+        hour\_of\_day & Hour of the day derived from the simulation step (0--23).\\
+        day & Simulation day derived from the transaction step.\\
+        orig\_balance\_diff & Difference between the source account balance before and after the transaction.\\
+        dest\_balance\_diff & Difference between the destination account balance after and before the transaction.\\
+        amount\_to\_balance\_ratio & Ratio of the transaction amount to the initial source account balance, calculated only when the balance is positive.\\
+        \bottomrule
+    \end{tabular}
+    \end{table}
+
+    \item Data aggregation - three aggregated datasets were created to summarize transaction activity and provide statistics for the dashboard further in the project.
+    \begin{table}[H]
+        \centering
+        \caption{Aggregations generated during historical data processing.}
+        \label{tab:historical_aggregations}
+        \small
+        \begin{tabular}{lp{9cm}}
+            \toprule
+            \textbf{Aggregation} & \textbf{Description}\\
+            \midrule
+            Hourly statistics & Transaction count, total amount, average amount, approximate median amount, and maximum amount for each simulation step.\\
+            Hourly statistics by type & Transaction count, total amount, and average amount grouped by simulation step and transaction type.\\
+            Statistics by type & Transaction count, total amount, and average amount grouped by transaction type.\\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \item Data storage - the enhanced transaction dataset and the three aggregated datasets were saved to MinIO in Parquet format for further processing and analysis.
+
+\end{enumerate}
+
+\subsection{Data Storage in MinIO}
 
 \section{System Architecture}
 
