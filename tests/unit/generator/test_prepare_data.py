@@ -175,3 +175,114 @@ class TestAssignLoginScenarios:
         assert scenario["SINGLE_FAILURE"] == pytest.approx(0.20, abs=0.015)
         assert scenario["MULTIPLE_FAILURES"] == pytest.approx(0.05, abs=0.015)
         assert scenario["MULTIPLE_LOGINS"] == pytest.approx(0.10, abs=0.015)
+
+
+class TestGenerateLoginEvents:
+    @pytest.fixture
+    def events(self, accounts_with_devices):
+        return generate_login_events(accounts_with_devices, SPLIT_STEP)
+
+    def test_output_schema(self, events):
+        """Login events have the 12 documented columns and sequential event_ids."""
+        assert list(events.columns) == LOGIN_EVENT_COLUMNS
+        assert list(events["event_id"]) == [
+            f"E{i:07d}" for i in range(1, len(events) + 1)
+        ]
+
+    def test_accounts_starting_at_or_before_split_plus_one_are_skipped(self, events):
+        """Accounts with no room before their first transaction get no events."""
+        assert "C_SKIP_501" not in set(events["account_id"])
+        assert "C_EDGE_502" in set(events["account_id"])
+
+    def test_event_sequence_matches_login_scenario(self, events, accounts_with_devices):
+        """Per account, event types appear in the order defined by its scenario."""
+        eligible = accounts_with_devices[
+            accounts_with_devices["first_transaction_step"] > SPLIT_STEP + 1
+        ]
+        for _, account in eligible.iterrows():
+            sequence = events[
+                events["account_id"] == account["account_id"]
+            ].sort_values("event_time")
+            assert (
+                list(sequence["event_type"])
+                == LOGIN_SCENARIOS[account["login_scenario"]]
+            )
+            assert sequence["event_time"].is_monotonic_increasing
+            assert sequence["event_time"].is_unique
+
+    def test_events_lie_between_split_and_first_transaction(
+        self, events, accounts_with_devices
+    ):
+        """Events lie after the split and before the account's first transaction."""
+        first_step = accounts_with_devices.set_index("account_id")[
+            "first_transaction_step"
+        ]
+        transaction_start = (
+            events["account_id"].map(first_step).astype(int) - 1
+        ) * HOUR
+
+        assert (events["event_time"] < transaction_start).all()
+        assert (events["event_time"] >= SPLIT_STEP * HOUR).all()
+
+    def test_short_activity_events_fall_in_near_window(
+        self, events, accounts_with_devices
+    ):
+        """SHORT_ACTIVITY events sit within the six hours before the transaction."""
+        first_step = accounts_with_devices.set_index("account_id")[
+            "first_transaction_step"
+        ]
+        short = accounts_with_devices.loc[
+            accounts_with_devices["activity_pattern"] == "SHORT_ACTIVITY", "account_id"
+        ]
+        subset = events[events["account_id"].isin(short)]
+        transaction_start = (
+            subset["account_id"].map(first_step).astype(int) - 1
+        ) * HOUR
+        assert (
+            subset["event_time"] >= transaction_start - NEAR_WINDOW_HOURS * HOUR
+        ).all()
+
+    def test_gaps_between_events_respect_scenario_limits(self, events):
+        """Gaps between events respect the scenario maxima (120 s, 60 s, 3 h)."""
+
+        def gaps(account_id):
+            times = events.loc[
+                events["account_id"] == account_id, "event_time"
+            ].sort_values()
+            return times.diff().dropna().tolist()
+
+        assert gaps("C_NORMAL_LOGIN") == []
+        assert all(1 <= gap <= 120 for gap in gaps("C_SINGLE_FAILURE"))
+        assert all(1 <= gap <= 60 for gap in gaps("C_MULTIPLE_FAILURES"))
+        assert all(1 <= gap <= 3 * HOUR for gap in gaps("C_MULTIPLE_LOGINS"))
+
+    def test_step_and_second_offset_are_consistent_with_event_time(self, events):
+        """step and second_offset are derived consistently from event_time."""
+        assert (events["step"] == events["event_time"] // HOUR + 1).all()
+        assert (events["second_offset"] == events["event_time"] % HOUR).all()
+
+    def test_device_profile_is_copied_and_renamed(self, events, accounts_with_devices):
+        """Device attributes are copied from the account and renamed."""
+        accounts = accounts_with_devices.set_index("account_id")
+        renamed = {
+            "device_type": "DeviceType",
+            "operating_system": "id_30",
+            "browser": "id_31",
+            "device_info": "DeviceInfo",
+            "screen_resolution": "id_33",
+        }
+        for _, event in events.iterrows():
+            account = accounts.loc[event["account_id"]]
+            assert event["device_id"] == account["device_id"]
+            for new_name, old_name in renamed.items():
+                assert event[new_name] == account[old_name]
+
+    def test_output_is_sorted_by_event_time(self, events):
+        """Events are returned in chronological order."""
+        assert events["event_time"].is_monotonic_increasing
+
+    def test_account_with_one_hour_window_uses_that_hour(self, events):
+        """An account with a one-hour window gets both events inside that hour."""
+        times = events.loc[events["account_id"] == "C_EDGE_502", "event_time"]
+        assert len(times) == 2
+        assert ((times >= SPLIT_STEP * HOUR) & (times < (SPLIT_STEP + 1) * HOUR)).all()
