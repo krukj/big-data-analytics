@@ -190,7 +190,7 @@ def test_imputed_rows_satisfy_balance_arithmetic(cleaner):
     sign = out["type"].map(lambda typ: 1 if typ == "CASH_IN" else -1)
     residual = out["oldbalanceOrg"] + sign * out["amount"] - out["newbalanceOrig"]
     assert residual.abs().max() == pytest.approx(0.0)
-    
+
 
 @pytest.mark.parametrize("column", FINANCIAL_COLUMNS)
 def test_batch_with_fully_null_financial_column_is_cleaned(cleaner, column):

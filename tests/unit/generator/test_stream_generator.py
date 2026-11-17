@@ -132,7 +132,7 @@ def test_data_corruption_conserves_rows_and_stores_delayed_ones():
 
 def test_fault_rates_match_documented_values():
     """Fault rates match the report: 2 % blanked, 0.5 % duplicated, 1 % delayed."""
-    #missing values 2 %, duplicates 0.5 %, out-of-order events 1 %
+    # missing values 2 %, duplicates 0.5 %, out-of-order events 1 %
     random.seed(1)
     n = 20_000
     df = transactions(n)
