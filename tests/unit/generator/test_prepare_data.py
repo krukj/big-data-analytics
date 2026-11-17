@@ -97,3 +97,55 @@ class TestSelectAccounts:
         info = select_accounts(stream, n_accounts=3)
         assert len(info) == 3
         assert set(info["account_id"]) <= set(stream["nameOrig"])
+
+
+class TestSampleDeviceProfiles:
+    def test_each_account_gets_one_complete_known_profile(self, identity_df, paysim_df):
+        """Each account gets one device profile taken from complete IEEE-CIS rows."""
+        _, stream = prepare_paysim(paysim_df, SPLIT_STEP)
+        info = select_accounts(stream)
+        out = sample_device_profiles(identity_df, info)
+
+        complete = identity_df.dropna(subset=DEVICE_COLUMNS)[DEVICE_COLUMNS]
+        assert len(out) == len(info)
+        assert out[DEVICE_COLUMNS].notna().all().all()
+        assert set(map(tuple, out[DEVICE_COLUMNS].values)) <= set(
+            map(tuple, complete.values)
+        )
+
+    def test_device_ids_are_unique_and_sequential(self, identity_df, paysim_df):
+        """device_id runs D000001, D000002, ... without gaps or repeats."""
+        _, stream = prepare_paysim(paysim_df, SPLIT_STEP)
+        out = sample_device_profiles(identity_df, select_accounts(stream))
+        assert list(out["device_id"]) == [f"D{i:06d}" for i in range(1, len(out) + 1)]
+
+    def test_device_type_shares_follow_reference_distribution(self, identity_df):
+        """Sampled desktop/mobile shares match the reference distribution."""
+        # non-null DeviceType in the fixture: desktop 3/5, mobile 2/5
+        info = pd.DataFrame(
+            {
+                "account_id": [f"C{i}" for i in range(5000)],
+                "first_transaction_step": 510,
+                "transaction_count": 1,
+            }
+        )
+        share = sample_device_profiles(identity_df, info)["DeviceType"].value_counts(
+            normalize=True
+        )
+        assert share["desktop"] == pytest.approx(0.6, abs=0.03)
+        assert share["mobile"] == pytest.approx(0.4, abs=0.03)
+
+    def test_raises_when_no_complete_profile_exists(self):
+        """Identity data without a single complete profile raises ValueError."""
+        identity = pd.DataFrame(
+            [["desktop", None, "chrome", None, None]], columns=DEVICE_COLUMNS
+        )
+        info = pd.DataFrame(
+            {
+                "account_id": ["C1"],
+                "first_transaction_step": [510],
+                "transaction_count": [1],
+            }
+        )
+        with pytest.raises(ValueError):
+            sample_device_profiles(identity, info)
