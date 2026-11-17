@@ -502,12 +502,12 @@ The updates to the PM1 report include the following changes:
     \item Instead of using the official MinIO server, we decided to use the pgsty/silo substitute. It is fully compatible with API S3 interface, while also deploying faster and being more lightweight. This change was made, because of problem with MinIO public pull policy for free accounts, which blocked fetching of MinIO latest image from Docker Hub. 
     \item We generated successful and failed login events using device information from IEEE-CIS. Four login scenarios and two activity patterns were added. The generated data was saved in Parquet format.
     \item We added \texttt{second\_offset} and \texttt{event\_time} to place transactions and login events on the same timeline.
-    \item PaySim was split into historical and streaming data. The data was saved in Parquet format, and Apache Spark was used to check, transform, and summarize historical transactions
+    \item PaySim was split into historical and streaming data. The data was saved in Parquet format, and Apache Spark was used to check, transform, and summarize historical transactions.
 \end{itemize}
 
 
 \section{Conceptual Data Model}
-The system combines financial transactions from PaySim with synthetically generated account activity events and device information. Although the data is organised into three parts, historical transactions, streaming transactions, and login event, in the conceptual data model consists one can distinguish four main entities: Account, Transaction, Login Event, and Device. 
+The system combines financial transactions from PaySim with synthetically generated account activity events and device information. Although the data is organised into three parts: historical transactions, streaming transactions, and login events, in the conceptual data model one can distinguish four main entities: Account, Transaction, Login Event, and Device. 
 
 Historical and streaming transactions represent the same entity, \textit{Transaction}, as they share a common structure and differ only in their role within the processing architecture. Each transaction involves a source and a destination \textit{Account}. \textit{Login Events} are associated with accounts through the \texttt{account\_id} attribute, which corresponds to \texttt{nameOrig} in PaySim. Each login event also contains a device identifier and its characteristics, represented conceptually by the \textit{Device} entity.
 
@@ -563,7 +563,7 @@ The original \texttt{isFraud} and \texttt{isFlaggedFraud} attributes were kept i
 \subsubsection{Synthetic Login Events - description}
 As stated in Section~\ref{section:data_sources}, synthetic account activity data was introduced to enrich PaySim transactions with additional information about user behavior and devices.
 
-Synthetic login events were generated exclusively for the streaming period (steps 501–743). Each event contains an account identifier, an event type, a device identifier, device characteristics, and temporal attributes. The dataset was saved in Parquet format. The attributes are preented below in Table~\ref{tab:login_data_description}.
+Synthetic login events were generated exclusively for the streaming period (steps 501–743). Each event contains an account identifier, an event type, a device identifier, device characteristics, and temporal attributes. The dataset was saved in Parquet format. The attributes are presented below in Table~\ref{tab:login_data_description}.
 
 \begin{table}[H]
     \centering
@@ -661,7 +661,22 @@ A historical data processing pipeline was implemented using PySpark to validate,
 
 \end{enumerate}
 
-\subsection{Data Storage in MinIO}
+\subsection{Data Storage}
+
+To satisfy the requirements of the Lambda Architecture, the batch layer stores historical data in MinIO-like storage - \texttt{pgsty/silo} (\url{https://github.com/pgsty/silo}), an S3-compatible object storage server deployed directly inside the local Docker environment.
+Because \texttt{pgsty/silo} maintains compatibility with Amazon S3 and the MinIO ecosystem, standard client libraries such as Python's \texttt{boto3} interact with the storage layer without requiring custom adapters or modified code.
+In addition, \texttt{pgsty/silo} is lightweight and deploys quickly and has a web dashboard.
+The storage container is defined in the \texttt{docker-compose.yml} file as \texttt{'minio'}. 
+
+The storage bucket structure is initialized upon startup in the \texttt{run\_minio.py} script. The script connects to the storage endpoint using root credentials, and ensures that required buckets exist before data ingestion or processing commences. If a bucket does not exist, it is created. The bucket structure is as follows:
+\begin{itemize}
+    \item \texttt{historical-data} bucket: Stores the historical PaySim dataset (steps 1-500), which is uploaded during initial setup and serves as the core data source for batch historical processing.
+    \item \texttt{clean-transactions-data} bucket: Contains cleaned, deduplicated, and validated streaming transactions. Populated by the stream consumer pipeline from Kafka messages, which cleans incoming transactions and stores them in the bucket.
+    \item \texttt{clean-logins-data} bucket: Analogous to the \texttt{clean-transactions-data} bucket, this bucket stores cleaned streaming login events. The stream consumer pipeline processes incoming login events from Kafka, performs validation and cleaning, and saves them in this bucket.
+    \item \texttt{processed-data} bucket: Will contain the processed datasets generated by the batch processing pipeline. This bucket is used for storing the enhanced historical dataset and aggregated statistics, which are later used for model training and dashboard visualizations. This pipeline has not yet been included in Apache Airflow, but will be integrated in the next project phase.
+\end{itemize}
+
+
 
 \section{System Architecture}
 
@@ -669,10 +684,12 @@ A historical data processing pipeline was implemented using PySpark to validate,
 \section{Analytical Approach}
 In the final dashboard user will be able to monitor real-time transaction activity, review historical statistics, and investigate the incoming transactions that has been labeled as suspicious by the anomaly detection model. 
 
-To detect suspicious transactions, we will use an unsupervised anomaly detection model. The model will be trained on historical data and when a new batch of data is received, it will be retrained incrementally. This way the model will adapt to possible changes in the data distribution, i.e concept drift. The new, retrained model will then replace the previous model, and the predictions for the new transactions will be generated using the latest model. To avoid prediction latency during the training of the new model, a shadow model approach will be used (the previous model will still be used to generate predictions for incoming transactions and only when the re-training is completed, the new model will replace the previous one).
+To detect suspicious transactions, we will use an unsupervised anomaly detection model. The model will be trained on historical data and when a new batch of data is received, it will be retrained incrementally. This way the model will adapt to possible changes in the data distribution, i.e concept drift. The new, retrained model will then replace the previous model, and the predictions for the new transactions will be generated using the latest model. 
+To avoid prediction latency during the training of the new model, a shadow model approach will be used (the previous model will still be used to generate predictions for incoming transactions and only when the re-training is completed, the new model will replace the previous one).
 When a new transaction is processed, the model will assign an anomaly score to it based on how much it deviates from the learned patterns. If the score exceeds a predefined threshold, the transaction will be flagged as suspicious and an alert will be generated for further investigation. 
 
-Following this approach, the batch layer will be responsible for training the model on historical data and retraining the model periodically on new batches of data, while in the speed layer predictions for incoming transactions will be made and suspicious transactions will be flagged. 
+Following this approach, the batch layer will be responsible for training the model on historical data and re-training the model periodically on new batches of data. The re-training will be automated and triggered by Apache Airflow.
+In the speed layer predictions for incoming transactions will be made and suspicious transactions will be flagged. 
 
 
 \newpage
