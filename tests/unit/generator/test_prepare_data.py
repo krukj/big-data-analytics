@@ -286,3 +286,41 @@ class TestGenerateLoginEvents:
         times = events.loc[events["account_id"] == "C_EDGE_502", "event_time"]
         assert len(times) == 2
         assert ((times >= SPLIT_STEP * HOUR) & (times < (SPLIT_STEP + 1) * HOUR)).all()
+
+
+def test_save_data_writes_three_parquet_files(
+    tmp_path, monkeypatch, paysim_df, accounts_with_devices
+):
+    """save_data writes batch, stream and login parquet files with matching counts."""
+    pytest.importorskip("pyarrow")
+    monkeypatch.setattr(prepare_data, "PROCESSED_DIR", tmp_path / "processed")
+    monkeypatch.setattr(prepare_data, "RAW_STREAM_DIR", tmp_path / "raw_stream")
+
+    batch, stream = prepare_paysim(paysim_df, SPLIT_STEP)
+    events = generate_login_events(accounts_with_devices, SPLIT_STEP)
+    prepare_data.save_data(batch, stream, events)
+
+    assert len(pd.read_parquet(tmp_path / "processed" / "paysim_batch.parquet")) == len(
+        batch
+    )
+    assert len(
+        pd.read_parquet(tmp_path / "raw_stream" / "paysim_stream.parquet")
+    ) == len(stream)
+    assert len(
+        pd.read_parquet(tmp_path / "raw_stream" / "login_events.parquet")
+    ) == len(events)
+
+
+def _run_generation(paysim_df, identity_df):
+    np.random.seed(prepare_data.RANDOM_SEED)
+    _, stream = prepare_paysim(paysim_df, SPLIT_STEP)
+    accounts = sample_device_profiles(identity_df, select_accounts(stream))
+    return generate_login_events(assign_login_scenarios(accounts), SPLIT_STEP)
+
+
+def test_generation_is_deterministic_under_project_seed(paysim_df, identity_df):
+    """Two runs under the project seed produce identical login events."""
+    first = _run_generation(paysim_df, identity_df)
+    second = _run_generation(paysim_df, identity_df)
+    assert not first.empty
+    pd.testing.assert_frame_equal(first, second)
