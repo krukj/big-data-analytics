@@ -75,3 +75,25 @@ class TestPreparePaysim:
         batch, stream = prepare_paysim(paysim_df, split_step)
         assert len(batch) == expected_batch_rows
         assert len(stream) == len(paysim_df) - expected_batch_rows
+
+
+class TestSelectAccounts:
+    def test_first_step_and_count_per_account(self, paysim_df):
+        """Per sender: first streaming step and number of transactions."""
+        _, stream = prepare_paysim(paysim_df, SPLIT_STEP)
+        info = select_accounts(stream).set_index("account_id")
+
+        assert list(info.columns) == ["first_transaction_step", "transaction_count"]
+        assert info.loc["C_B", "first_transaction_step"] == 503
+        assert info.loc["C_B", "transaction_count"] == 2
+        assert info.loc["C_D", "first_transaction_step"] == 520
+        assert info.loc["C_D", "transaction_count"] == 2
+        assert len(info) == stream["nameOrig"].nunique()
+        assert info.index.is_unique
+
+    def test_subsample_returns_requested_number_of_accounts(self, paysim_df):
+        """n_accounts limits the selection to that many existing senders."""
+        _, stream = prepare_paysim(paysim_df, SPLIT_STEP)
+        info = select_accounts(stream, n_accounts=3)
+        assert len(info) == 3
+        assert set(info["account_id"]) <= set(stream["nameOrig"])
