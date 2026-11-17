@@ -15,7 +15,7 @@ from botocore.exceptions import EndpointConnectionError
 
 from config import KAFKA_BROKER, MINIO_PASSWORD, MINIO_URL, MINIO_USER
 
-AIRFLOW_CONTAINER = os.getenv("AIRFLOW_CONTAINER", "airflow-scheduler")
+AIRFLOW_SERVICE = os.getenv("AIRFLOW_SERVICE", "airflow-scheduler")
 
 
 @pytest.fixture(scope="session")
@@ -54,7 +54,7 @@ def airflow():
 
     def run(*args: str, timeout: int = 120) -> str:
         result = subprocess.run(
-            ["docker", "exec", AIRFLOW_CONTAINER, "airflow", *args],
+            ["docker", "compose", "exec", "-T", AIRFLOW_SERVICE, "airflow", *args],
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -67,6 +67,24 @@ def airflow():
         run("version", timeout=30)
     except (RuntimeError, FileNotFoundError, subprocess.TimeoutExpired):
         pytest.skip("Airflow scheduler container is not running")
+    return run
+
+
+@pytest.fixture(scope="session")
+def scheduler_python(airflow):
+    """Runs a Python snippet inside the scheduler container and returns stdout."""
+
+    def run(code: str, timeout: int = 120) -> str:
+        result = subprocess.run(
+            ["docker", "compose", "exec", "-T", AIRFLOW_SERVICE, "python", "-c", code],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.strip() or result.stdout.strip())
+        return result.stdout
+
     return run
 
 
