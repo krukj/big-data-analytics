@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+
 class FakeKafkaClient:
     """Accepts any confluent_kafka configuration and records produced messages."""
 
@@ -26,14 +27,29 @@ class FakeKafkaClient:
     def flush(self, *args, **kwargs):
         return 0
 
+
 confluent_kafka.Consumer = FakeKafkaClient
 confluent_kafka.Producer = FakeKafkaClient
 
-PAYSIM_COLUMNS = ["step", "type", "amount", "nameOrig", "oldbalanceOrg", "newbalanceOrig",
-    "nameDest", "oldbalanceDest", "newbalanceDest", "isFraud", "isFlaggedFraud"]
+PAYSIM_COLUMNS = [
+    "step",
+    "type",
+    "amount",
+    "nameOrig",
+    "oldbalanceOrg",
+    "newbalanceOrig",
+    "nameDest",
+    "oldbalanceDest",
+    "newbalanceDest",
+    "isFraud",
+    "isFlaggedFraud",
+]
 DEVICE_COLUMNS = ["DeviceType", "id_30", "id_31", "DeviceInfo", "id_33"]
 
-def transaction(step, typ, amount, orig, old, new, dest="M100", old_dest=0.0, new_dest=0.0):
+
+def transaction(
+    step, typ, amount, orig, old, new, dest="M100", old_dest=0.0, new_dest=0.0
+):
     return {
         "step": step,
         "type": typ,

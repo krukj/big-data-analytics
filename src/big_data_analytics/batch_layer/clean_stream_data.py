@@ -56,6 +56,10 @@ class StreamConsumer:
         df = pd.DataFrame(data)
         df = df.drop_duplicates()
 
+        for col in ("amount", "oldbalanceOrg", "newbalanceOrig"):
+            if col in df.columns:
+                df[col] = df[col].astype("float64")
+
         if "amount" in df.columns:
             mask_amount_null = df["amount"].isnull()
             df.loc[mask_amount_null, "amount"] = abs(
