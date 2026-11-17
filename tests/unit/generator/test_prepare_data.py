@@ -149,3 +149,29 @@ class TestSampleDeviceProfiles:
         )
         with pytest.raises(ValueError):
             sample_device_profiles(identity, info)
+
+
+class TestAssignLoginScenarios:
+    def test_values_come_from_documented_domains(self):
+        """activity_pattern and login_scenario only take the documented values."""
+        accounts = pd.DataFrame({"account_id": [f"C{i}" for i in range(100)]})
+        out = assign_login_scenarios(accounts)
+
+        assert len(out) == len(accounts)
+        assert set(out["activity_pattern"]) <= {"SHORT_ACTIVITY", "MIXED_ACTIVITY"}
+        assert set(out["login_scenario"]) <= set(LOGIN_SCENARIOS)
+        assert "login_scenario" not in accounts.columns
+
+    def test_shares_match_documented_mix(self):
+        """Scenario mix 65/20/5/10 and activity mix 70/30 hold at n = 20 000."""
+        # 70/30 activity patterns, 65/20/5/10 login scenarios
+        accounts = pd.DataFrame({"account_id": [f"C{i}" for i in range(20000)]})
+        out = assign_login_scenarios(accounts)
+
+        activity = out["activity_pattern"].value_counts(normalize=True)
+        scenario = out["login_scenario"].value_counts(normalize=True)
+        assert activity["SHORT_ACTIVITY"] == pytest.approx(0.70, abs=0.015)
+        assert scenario["NORMAL_LOGIN"] == pytest.approx(0.65, abs=0.015)
+        assert scenario["SINGLE_FAILURE"] == pytest.approx(0.20, abs=0.015)
+        assert scenario["MULTIPLE_FAILURES"] == pytest.approx(0.05, abs=0.015)
+        assert scenario["MULTIPLE_LOGINS"] == pytest.approx(0.10, abs=0.015)
