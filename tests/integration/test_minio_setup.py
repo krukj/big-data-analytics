@@ -20,13 +20,28 @@ EXPECTED_BUCKETS = {
 
 
 def test_required_buckets_exist(s3):
-    """run_minio.py created every bucket the pipelines write to."""
+    """Verify run_minio.py created every bucket the pipelines write to.
+    
+    Steps:
+    1. List the MinIO buckets with boto3.
+    Expected:
+    - historical-data, clean-transactions-data, clean-logins-data and processed-data
+        exist.
+    """
     names = {bucket["Name"] for bucket in s3.list_buckets()["Buckets"]}
     assert EXPECTED_BUCKETS <= names
 
 
 def test_historical_dataset_is_uploaded(s3):
-    """The historical PaySim parquet is in place and not empty."""
+    """Verify the historical PaySim parquet is uploaded to MinIO.
+    
+    Steps:
+    1. Request the metadata (head_object) of paysim/historical_paysim.parquet in the
+        historical-data bucket.
+    Expected:
+    - The object exists.
+    - Its size is greater than 0 bytes.
+    """
     try:
         head = s3.head_object(
             Bucket=MINIO_BUCKET_BATCH, Key=MINIO_HISTORICAL_OBJECT_NAME

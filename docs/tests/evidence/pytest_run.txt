@@ -1,0 +1,383 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.13, pytest-9.2.0, pluggy-1.7.0 -- /Users/zuzannasienko/Documents/masters/semestr2/PW/Big Data Analytics/big-data-analytics/.venv/bin/python
+cachedir: .pytest_cache
+metadata: {'Python': '3.13.13', 'Platform': 'macOS-15.3.2-arm64-arm-64bit-Mach-O', 'Packages': {'pytest': '9.2.0', 'pluggy': '1.7.0'}, 'Plugins': {'metadata': '3.1.1', 'html': '4.2.0', 'anyio': '4.15.1'}}
+rootdir: /Users/zuzannasienko/Documents/masters/semestr2/PW/Big Data Analytics/big-data-analytics
+configfile: pyproject.toml
+plugins: metadata-3.1.1, html-4.2.0, anyio-4.15.1
+collecting ... collected 64 items
+
+tests/integration/test_airflow_dag.py::test_dag_file_imports_without_errors PASSED [  1%]
+tests/integration/test_airflow_dag.py::test_dag_is_registered PASSED     [  3%]
+tests/integration/test_airflow_dag.py::test_dag_runs_every_minute PASSED [  4%]
+tests/integration/test_kafka_topics.py::test_required_topics_exist PASSED [  6%]
+tests/integration/test_kafka_topics.py::test_topics_have_three_partitions PASSED [  7%]
+tests/integration/test_minio_setup.py::test_required_buckets_exist PASSED [  9%]
+tests/integration/test_minio_setup.py::test_historical_dataset_is_uploaded PASSED [ 10%]
+tests/integration/test_stream_to_minio.py::test_marked_batch_is_cleaned_and_stored PASSED [ 12%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_exact_duplicates_are_removed PASSED [ 14%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_amount_is_absolute_balance_difference[CASH_OUT-1000.0-400.0-600.0] PASSED [ 15%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_amount_is_absolute_balance_difference[CASH_IN-400.0-1000.0-600.0] PASSED [ 17%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_amount_is_absolute_balance_difference[PAYMENT-50.0-50.0-0.0] PASSED [ 18%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_old_balance_for_outflow_is_new_plus_amount[CASH_OUT] PASSED [ 20%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_old_balance_for_outflow_is_new_plus_amount[PAYMENT] PASSED [ 21%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_old_balance_for_outflow_is_new_plus_amount[TRANSFER] PASSED [ 23%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_old_balance_for_cash_in_is_new_minus_amount PASSED [ 25%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_new_balance_for_outflow_is_old_minus_amount[CASH_OUT] PASSED [ 26%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_new_balance_for_outflow_is_old_minus_amount[PAYMENT] PASSED [ 28%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_new_balance_for_outflow_is_old_minus_amount[TRANSFER] PASSED [ 29%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_missing_new_balance_for_cash_in_is_old_plus_amount PASSED [ 31%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_complete_rows_pass_through_unchanged PASSED [ 32%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_login_events_are_only_deduplicated PASSED [ 34%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_no_residual_nulls_in_financial_columns_after_single_fault PASSED [ 35%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_imputed_rows_satisfy_balance_arithmetic PASSED [ 37%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_batch_with_fully_null_financial_column_is_cleaned[amount] PASSED [ 39%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_batch_with_fully_null_financial_column_is_cleaned[oldbalanceOrg] PASSED [ 40%]
+tests/unit/batch_layer/test_clean_stream_data.py::test_batch_with_fully_null_financial_column_is_cleaned[newbalanceOrig] PASSED [ 42%]
+tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns ERROR [ 43%]
+tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features ERROR [ 45%]
+tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features_zero_balance ERROR [ 46%]
+tests/unit/batch_layer/test_historical_pipeline.py::test_aggregate_data ERROR [ 48%]
+tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_is_exhaustive_and_disjoint PASSED [ 50%]
+tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_step_itself_belongs_to_batch PASSED [ 51%]
+tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_event_time_is_derived_from_step PASSED [ 53%]
+tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_input_frame_is_not_mutated PASSED [ 54%]
+tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_step_boundaries[0-0] PASSED [ 56%]
+tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_step_boundaries[499-3] PASSED [ 57%]
+tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_step_boundaries[743-12] PASSED [ 59%]
+tests/unit/generator/test_prepare_data.py::TestSelectAccounts::test_first_step_and_count_per_account PASSED [ 60%]
+tests/unit/generator/test_prepare_data.py::TestSelectAccounts::test_subsample_returns_requested_number_of_accounts PASSED [ 62%]
+tests/unit/generator/test_prepare_data.py::TestSampleDeviceProfiles::test_each_account_gets_one_complete_known_profile PASSED [ 64%]
+tests/unit/generator/test_prepare_data.py::TestSampleDeviceProfiles::test_device_ids_are_unique_and_sequential PASSED [ 65%]
+tests/unit/generator/test_prepare_data.py::TestSampleDeviceProfiles::test_device_type_shares_follow_reference_distribution PASSED [ 67%]
+tests/unit/generator/test_prepare_data.py::TestSampleDeviceProfiles::test_raises_when_no_complete_profile_exists PASSED [ 68%]
+tests/unit/generator/test_prepare_data.py::TestAssignLoginScenarios::test_values_come_from_documented_domains PASSED [ 70%]
+tests/unit/generator/test_prepare_data.py::TestAssignLoginScenarios::test_shares_match_documented_mix PASSED [ 71%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_output_schema PASSED [ 73%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_accounts_starting_at_or_before_split_plus_one_are_skipped PASSED [ 75%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_event_sequence_matches_login_scenario PASSED [ 76%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_events_lie_between_split_and_first_transaction PASSED [ 78%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_short_activity_events_fall_in_near_window PASSED [ 79%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_gaps_between_events_respect_scenario_limits PASSED [ 81%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_step_and_second_offset_are_consistent_with_event_time PASSED [ 82%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_device_profile_is_copied_and_renamed PASSED [ 84%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_output_is_sorted_by_event_time PASSED [ 85%]
+tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_account_with_one_hour_window_uses_that_hour PASSED [ 87%]
+tests/unit/generator/test_prepare_data.py::test_save_data_writes_three_parquet_files PASSED [ 89%]
+tests/unit/generator/test_prepare_data.py::test_generation_is_deterministic_under_project_seed PASSED [ 90%]
+tests/unit/generator/test_stream_generator.py::test_check_data_path_accepts_only_parquet PASSED [ 92%]
+tests/unit/generator/test_stream_generator.py::test_take_next_stream_filters_current_step PASSED [ 93%]
+tests/unit/generator/test_stream_generator.py::test_data_corruption_conserves_rows_and_stores_delayed_ones PASSED [ 95%]
+tests/unit/generator/test_stream_generator.py::test_fault_rates_match_documented_values PASSED [ 96%]
+tests/unit/generator/test_stream_generator.py::test_produce_replays_every_row_once_in_step_order PASSED [ 98%]
+tests/unit/generator/test_stream_generator.py::test_delayed_row_is_re_emitted_in_the_following_step PASSED [100%]
+
+==================================== ERRORS ====================================
+_____________ ERROR at setup of test_validate_data_missing_columns _____________
+
+    @pytest.fixture(scope="module")
+    def spark():
+        spark = (
+            SparkSession.builder.master("local[1]")
+            .appName("HistoricalPipelineTests")
+            .config("spark.ui.enabled", "false")
+            .config("spark.sql.shuffle.partitions", "2")
+>           .getOrCreate()
+             ^^^^^^^^^^^^^
+        )
+
+tests/unit/batch_layer/test_historical_pipeline.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.session.SparkSession.Builder object at 0x1227e74d0>
+
+    def getOrCreate(self) -> "SparkSession":
+        """Gets an existing :class:`SparkSession` or, if there is no existing one, creates a
+        new one based on the options set in this builder.
+    
+        .. versionadded:: 2.0.0
+    
+        .. versionchanged:: 3.4.0
+            Supports Spark Connect.
+    
+        Returns
+        -------
+        :class:`SparkSession`
+    
+        Examples
+        --------
+        This method first checks whether there is a valid global default SparkSession, and if
+        yes, return that one. If no valid global default SparkSession exists, the method
+        creates a new SparkSession and assigns the newly created SparkSession as the global
+        default.
+    
+        >>> s1 = SparkSession.builder.config("k1", "v1").getOrCreate()
+        >>> s1.conf.get("k1") == "v1"
+        True
+    
+        The configuration of the SparkSession can be changed afterwards
+    
+        >>> s1.conf.set("k1", "v1_new")
+        >>> s1.conf.get("k1") == "v1_new"
+        True
+    
+        In case an existing SparkSession is returned, the config options specified
+        in this builder will be applied to the existing SparkSession.
+    
+        >>> s2 = SparkSession.builder.config("k2", "v2").getOrCreate()
+        >>> s1.conf.get("k1") == s2.conf.get("k1") == "v1_new"
+        True
+        >>> s1.conf.get("k2") == s2.conf.get("k2") == "v2"
+        True
+        """
+        opts = dict(self._options)
+    
+        if is_remote_only():
+            from pyspark.sql.connect.session import SparkSession as RemoteSparkSession
+    
+            url = opts.get("spark.remote", os.environ.get("SPARK_REMOTE"))
+    
+            if url is None:
+>               raise PySparkRuntimeError(
+                    errorClass="CONNECT_URL_NOT_SET",
+                    messageParameters={},
+                )
+E               pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+
+.venv/lib/python3.13/site-packages/pyspark/sql/session.py:480: PySparkRuntimeError
+___________________ ERROR at setup of test_engineer_features ___________________
+
+    @pytest.fixture(scope="module")
+    def spark():
+        spark = (
+            SparkSession.builder.master("local[1]")
+            .appName("HistoricalPipelineTests")
+            .config("spark.ui.enabled", "false")
+            .config("spark.sql.shuffle.partitions", "2")
+>           .getOrCreate()
+             ^^^^^^^^^^^^^
+        )
+
+tests/unit/batch_layer/test_historical_pipeline.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.session.SparkSession.Builder object at 0x1227e74d0>
+
+    def getOrCreate(self) -> "SparkSession":
+        """Gets an existing :class:`SparkSession` or, if there is no existing one, creates a
+        new one based on the options set in this builder.
+    
+        .. versionadded:: 2.0.0
+    
+        .. versionchanged:: 3.4.0
+            Supports Spark Connect.
+    
+        Returns
+        -------
+        :class:`SparkSession`
+    
+        Examples
+        --------
+        This method first checks whether there is a valid global default SparkSession, and if
+        yes, return that one. If no valid global default SparkSession exists, the method
+        creates a new SparkSession and assigns the newly created SparkSession as the global
+        default.
+    
+        >>> s1 = SparkSession.builder.config("k1", "v1").getOrCreate()
+        >>> s1.conf.get("k1") == "v1"
+        True
+    
+        The configuration of the SparkSession can be changed afterwards
+    
+        >>> s1.conf.set("k1", "v1_new")
+        >>> s1.conf.get("k1") == "v1_new"
+        True
+    
+        In case an existing SparkSession is returned, the config options specified
+        in this builder will be applied to the existing SparkSession.
+    
+        >>> s2 = SparkSession.builder.config("k2", "v2").getOrCreate()
+        >>> s1.conf.get("k1") == s2.conf.get("k1") == "v1_new"
+        True
+        >>> s1.conf.get("k2") == s2.conf.get("k2") == "v2"
+        True
+        """
+        opts = dict(self._options)
+    
+        if is_remote_only():
+            from pyspark.sql.connect.session import SparkSession as RemoteSparkSession
+    
+            url = opts.get("spark.remote", os.environ.get("SPARK_REMOTE"))
+    
+            if url is None:
+>               raise PySparkRuntimeError(
+                    errorClass="CONNECT_URL_NOT_SET",
+                    messageParameters={},
+                )
+E               pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+
+.venv/lib/python3.13/site-packages/pyspark/sql/session.py:480: PySparkRuntimeError
+____________ ERROR at setup of test_engineer_features_zero_balance _____________
+
+    @pytest.fixture(scope="module")
+    def spark():
+        spark = (
+            SparkSession.builder.master("local[1]")
+            .appName("HistoricalPipelineTests")
+            .config("spark.ui.enabled", "false")
+            .config("spark.sql.shuffle.partitions", "2")
+>           .getOrCreate()
+             ^^^^^^^^^^^^^
+        )
+
+tests/unit/batch_layer/test_historical_pipeline.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.session.SparkSession.Builder object at 0x1227e74d0>
+
+    def getOrCreate(self) -> "SparkSession":
+        """Gets an existing :class:`SparkSession` or, if there is no existing one, creates a
+        new one based on the options set in this builder.
+    
+        .. versionadded:: 2.0.0
+    
+        .. versionchanged:: 3.4.0
+            Supports Spark Connect.
+    
+        Returns
+        -------
+        :class:`SparkSession`
+    
+        Examples
+        --------
+        This method first checks whether there is a valid global default SparkSession, and if
+        yes, return that one. If no valid global default SparkSession exists, the method
+        creates a new SparkSession and assigns the newly created SparkSession as the global
+        default.
+    
+        >>> s1 = SparkSession.builder.config("k1", "v1").getOrCreate()
+        >>> s1.conf.get("k1") == "v1"
+        True
+    
+        The configuration of the SparkSession can be changed afterwards
+    
+        >>> s1.conf.set("k1", "v1_new")
+        >>> s1.conf.get("k1") == "v1_new"
+        True
+    
+        In case an existing SparkSession is returned, the config options specified
+        in this builder will be applied to the existing SparkSession.
+    
+        >>> s2 = SparkSession.builder.config("k2", "v2").getOrCreate()
+        >>> s1.conf.get("k1") == s2.conf.get("k1") == "v1_new"
+        True
+        >>> s1.conf.get("k2") == s2.conf.get("k2") == "v2"
+        True
+        """
+        opts = dict(self._options)
+    
+        if is_remote_only():
+            from pyspark.sql.connect.session import SparkSession as RemoteSparkSession
+    
+            url = opts.get("spark.remote", os.environ.get("SPARK_REMOTE"))
+    
+            if url is None:
+>               raise PySparkRuntimeError(
+                    errorClass="CONNECT_URL_NOT_SET",
+                    messageParameters={},
+                )
+E               pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+
+.venv/lib/python3.13/site-packages/pyspark/sql/session.py:480: PySparkRuntimeError
+____________________ ERROR at setup of test_aggregate_data _____________________
+
+    @pytest.fixture(scope="module")
+    def spark():
+        spark = (
+            SparkSession.builder.master("local[1]")
+            .appName("HistoricalPipelineTests")
+            .config("spark.ui.enabled", "false")
+            .config("spark.sql.shuffle.partitions", "2")
+>           .getOrCreate()
+             ^^^^^^^^^^^^^
+        )
+
+tests/unit/batch_layer/test_historical_pipeline.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.session.SparkSession.Builder object at 0x1227e74d0>
+
+    def getOrCreate(self) -> "SparkSession":
+        """Gets an existing :class:`SparkSession` or, if there is no existing one, creates a
+        new one based on the options set in this builder.
+    
+        .. versionadded:: 2.0.0
+    
+        .. versionchanged:: 3.4.0
+            Supports Spark Connect.
+    
+        Returns
+        -------
+        :class:`SparkSession`
+    
+        Examples
+        --------
+        This method first checks whether there is a valid global default SparkSession, and if
+        yes, return that one. If no valid global default SparkSession exists, the method
+        creates a new SparkSession and assigns the newly created SparkSession as the global
+        default.
+    
+        >>> s1 = SparkSession.builder.config("k1", "v1").getOrCreate()
+        >>> s1.conf.get("k1") == "v1"
+        True
+    
+        The configuration of the SparkSession can be changed afterwards
+    
+        >>> s1.conf.set("k1", "v1_new")
+        >>> s1.conf.get("k1") == "v1_new"
+        True
+    
+        In case an existing SparkSession is returned, the config options specified
+        in this builder will be applied to the existing SparkSession.
+    
+        >>> s2 = SparkSession.builder.config("k2", "v2").getOrCreate()
+        >>> s1.conf.get("k1") == s2.conf.get("k1") == "v1_new"
+        True
+        >>> s1.conf.get("k2") == s2.conf.get("k2") == "v2"
+        True
+        """
+        opts = dict(self._options)
+    
+        if is_remote_only():
+            from pyspark.sql.connect.session import SparkSession as RemoteSparkSession
+    
+            url = opts.get("spark.remote", os.environ.get("SPARK_REMOTE"))
+    
+            if url is None:
+>               raise PySparkRuntimeError(
+                    errorClass="CONNECT_URL_NOT_SET",
+                    messageParameters={},
+                )
+E               pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
+
+.venv/lib/python3.13/site-packages/pyspark/sql/session.py:480: PySparkRuntimeError
+=============================== warnings summary ===============================
+tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns
+  /Users/zuzannasienko/Documents/masters/semestr2/PW/Big Data Analytics/big-data-analytics/.venv/lib/python3.13/site-packages/pyspark/sql/connect/utils.py:41: FutureWarning: PySpark does not yet fully support pandas >= 3.0.0. Some features may not work correctly. It is recommended to use pandas < 3.0.0 for now.
+    require_minimum_pandas_version()
+
+tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns
+  /Users/zuzannasienko/Documents/masters/semestr2/PW/Big Data Analytics/big-data-analytics/.venv/lib/python3.13/site-packages/pyspark/testing/utils.py:127: FutureWarning: PySpark does not yet fully support pandas >= 3.0.0. Some features may not work correctly. It is recommended to use pandas < 3.0.0 for now.
+    require_minimum_pandas_version()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+test documentation written to docs/tests/test_cases.md
+test documentation written to docs/tests/test_cases.tex
+test documentation written to docs/tests/test_cases_summary.tex
+- Generated html report: file:///Users/zuzannasienko/Documents/masters/semestr2/PW/Big%20Data%20Analytics/big-data-analytics/docs/tests/evidence/pytest_report.html -
+=========================== short test summary info ============================
+ERROR tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns
+ERROR tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features
+ERROR tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features_zero_balance
+ERROR tests/unit/batch_layer/test_historical_pipeline.py::test_aggregate_data
+================== 60 passed, 2 warnings, 4 errors in 49.35s ===================

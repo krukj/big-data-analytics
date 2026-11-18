@@ -1,0 +1,155 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[top=3cm,bottom=3cm,left=2.5cm,right=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{pdflscape}
+\usepackage{verbatim}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\todo}[1]{\textbf{[TODO: #1]}}
+\newcommand{\code}[1]{\texttt{#1}}
+\let\plainunderscore\_
+\renewcommand{\_}{\plainunderscore\allowbreak}
+\setlength{\emergencystretch}{3em}
+\newcommand{\evidencelog}[1]{%
+  \IfFileExists{#1}{{\footnotesize\verbatiminput{#1}}}{\todo{add \detokenize{#1}}}}
+\newcommand{\evidencefigure}[3][0.9\linewidth]{%
+  \begin{figure}[H]\centering
+  \IfFileExists{#2}{\includegraphics[width=#1]{#2}}{\fbox{\todo{add \detokenize{#2}}}}
+  \caption{#3}
+  \end{figure}}
+
+\title{\Large Big Data Analytics \\[0.5em]
+\Huge Tests \\[0.5em]
+\Large Real-time Financial Transaction Anomaly Detection}
+\author{Team: philodendron white measure \\[0.5em]}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------------------------
+\section{Scope and approach}
+
+This document covers the testing deliverable of Milestone 2: functional tests of the
+data acquisition and pre-processing modules, quality tests of the data transformation
+processes, and the tabular documentation of every test case.
+
+\subsection{Modules under test}
+
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.38\linewidth}
+  >{\raggedright\arraybackslash}p{0.58\linewidth}@{}}
+\toprule
+\textbf{Module} & \textbf{Role} \\
+\midrule
+\code{generator/prepare\_data.py} & Acquisition: batch/stream split of PaySim and
+generation of synthetic login events. \\
+\code{generator/stream\_generator.py} & Acquisition: step-wise replay of the stream to
+Kafka with controlled fault injection. \\
+\code{batch\_layer/clean\_stream\_data.py} & Pre-processing: de-duplication and imputation
+of missing financial fields before storage in MinIO. \\
+\code{batch\_layer/historical\_pipeline.py} & Transformation: validation, feature
+engineering and aggregation of historical data in Spark. \\
+\bottomrule
+\end{tabular}
+
+\subsection{Test categories}
+
+\begin{description}
+\item[Functional] The test checks that a module behaves as specified for a given input:
+outputs, boundary cases, error handling, message order.
+\item[Quality] The test checks a property of the data produced by a transformation:
+completeness (no residual nulls), consistency (balance arithmetic, time attributes),
+conservation (no row lost or invented), distribution (fault rates, scenario and device
+shares) and reproducibility (determinism under the project seed). Quality tests carry
+the \code{quality} pytest marker.
+\end{description}
+
+\subsection{Test levels}
+
+\begin{description}
+\item[Unit] \code{tests/unit}. Pure Python on small in-memory fixtures; Kafka clients are
+replaced by fakes, no service is needed. Runs in CI on every pull request.
+\item[Deployment check] \code{tests/integration} (\code{test\_minio\_setup},
+\code{test\_kafka\_topics}, \code{test\_airflow\_dag}). Verifies that the Docker Compose
+stack is provisioned as designed: buckets, topics and partitions, DAG registration and
+schedule.
+\item[Integration] \code{tests/integration/test\_stream\_to\_minio}. One end-to-end run of
+the stream path: Kafka $\rightarrow$ Airflow DAG $\rightarrow$ cleaning $\rightarrow$ MinIO.
+\end{description}
+
+Deployment checks and the integration test share the \code{integration} marker and
+appear with level \emph{integration} in Table~\ref{tab:test-cases}. They are skipped,
+with the reason recorded, when their service is not reachable.
+
+% ---------------------------------------------------------------------------------
+\section{Test environment and commands}
+
+\begin{tabular}{@{}p{0.30\linewidth}p{0.66\linewidth}@{}}
+\toprule
+\textbf{Component} & \textbf{Version} \\
+\midrule
+Kafka & \code{apache/kafka:4.3.1} \\
+Airflow & \code{apache/airflow:2.5.0} \\
+Object storage & MinIO-compatible, \code{pgsty/silo:latest} \todo{pin digest} \\
+Cassandra & \code{cassandra:5.0} \\
+\bottomrule
+\end{tabular}
+
+\subsection{Commands}
+
+The full run (stack started with \code{docker compose up -d}):
+\begin{verbatim}
+uv run pytest tests -v -ra --test-doc docs/tests/test_cases \
+    --html=docs/tests/evidence/pytest_report.html --self-contained-html \
+    2>&1 | tee docs/tests/evidence/pytest_run.txt
+\end{verbatim}
+CI runs the same suite with \code{-m "not integration"}. The \code{--test-doc} option
+generates the tables in Sections~\ref{sec:summary} and~\ref{sec:cases} from the test
+docstrings and the outcomes of this run; they are not typed by hand.
+
+% ---------------------------------------------------------------------------------
+\section{Summary}
+\label{sec:summary}
+
+\begin{table}[H]
+\centering
+\input{test_cases_summary.tex}
+\caption{Test functions and executed cases per level and type. A parametrised test is
+one test with several cases.}
+\label{tab:summary}
+\end{table}
+
+% ---------------------------------------------------------------------------------
+\begin{landscape}
+\section{Test cases}
+\label{sec:cases}
+
+One row per test function, in collection order. IDs \code{U-nn} are unit tests,
+\code{I-nn} deployment checks and integration tests. The mapping from ID to pytest node
+is in \code{test\_cases.md}.
+
+\input{test_cases.tex}
+\end{landscape}
+
+% ---------------------------------------------------------------------------------
+\appendix
+\section{Evidence}
+
+\subsection{pytest run log}
+\evidencelog{evidence/pytest_run.txt}
+
+\subsection{Screenshots}
+\evidencefigure{evidence/minio/buckets_present.png}{MinIO console: the four buckets
+created by the batch layer.}
+\evidencefigure{evidence/minio/clean_transaction_data.png}{MinIO console: cleaned
+parquet in \code{clean-transactions-data} written by the end-to-end test.}
+\evidencefigure{evidence/airflow/airflow_dag_run.png}{Airflow: successful run of the
+\code{stream\_to\_minio} DAG triggered by the end-to-end test.}
+\evidencefigure{evidence/kafka/kafka_topics.png}{Kafka UI: topics and partitions.}
+
+\end{document}
