@@ -8,11 +8,12 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
-    "apache-airflow-providers-apache-spark>=6.3.4",
+    "apache-airflow==3.3.2",
     "boto3>=1.43.118",
     "confluent-kafka>=2.16.0",
     "pandas>=3.0.6",
     "pyarrow>=26.0.0",
+    "pyspark>=4.3.0",
 ]
 
 [project.scripts]
