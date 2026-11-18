@@ -223,6 +223,7 @@ def test_login_events_are_only_deduplicated(cleaner):
     assert out.iloc[0].to_dict() == login
 
 
+@pytest.mark.quality
 def test_no_residual_nulls_in_financial_columns_after_single_fault(cleaner):
     """Verify no null remains in financial columns after single-field faults.
     
@@ -245,6 +246,7 @@ def test_no_residual_nulls_in_financial_columns_after_single_fault(cleaner):
     assert out[FINANCIAL_COLUMNS].isna().sum().sum() == 0
 
 
+@pytest.mark.quality
 def test_imputed_rows_satisfy_balance_arithmetic(cleaner):
     """Verify imputed rows satisfy the balance equation.
     
