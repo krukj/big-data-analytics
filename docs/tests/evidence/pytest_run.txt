@@ -82,4 +82,4 @@ test documentation written to docs/tests/test_cases.md
 test documentation written to docs/tests/test_cases.tex
 test documentation written to docs/tests/test_cases_summary.tex
 - Generated html report: file:///Users/zuzannasienko/Documents/masters/semestr2/PW/Big%20Data%20Analytics/big-data-analytics/docs/tests/evidence/pytest_report.html -
-======================== 64 passed, 1 warning in 21.91s ========================
+======================== 64 passed, 1 warning in 44.14s ========================
