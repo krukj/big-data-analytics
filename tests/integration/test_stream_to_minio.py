@@ -59,7 +59,19 @@ def newest_objects(s3, since: datetime) -> list[dict]:
 
 
 def test_marked_batch_is_cleaned_and_stored(kafka_admin, s3, airflow):
-    """Ten marked messages reach MinIO cleaned: all present, blanked amount imputed."""
+    """Verify the stream path Kafka -> Airflow DAG -> cleaning -> MinIO end to end.
+    
+    Steps:
+    1. Publish 10 uniquely marked transactions to raw-transactions, one of them with
+        amount = null.
+    2. Unpause and trigger the stream_to_minio DAG.
+    3. Poll clean-transactions-data for up to 300 s for a new parquet that holds the
+        batch.
+    Expected:
+    - All 10 messages are delivered to Kafka and appear in one cleaned parquet.
+    - The financial columns of the batch contain no null.
+    - The blanked amount is imputed as 600.0.
+    """
     marker = f"C_SMOKE_{uuid.uuid4().hex[:8]}"
     started = datetime.now(timezone.utc)
 
