@@ -123,6 +123,7 @@ def test_take_next_stream_filters_current_step(two_steps):
     assert (out["step"] == 502).all()
 
 
+@pytest.mark.quality
 def test_data_corruption_conserves_rows_and_stores_delayed_ones():
     """Verify fault injection neither loses nor invents transactions.
     
@@ -154,6 +155,7 @@ def test_data_corruption_conserves_rows_and_stores_delayed_ones():
     )
 
 
+@pytest.mark.quality
 def test_fault_rates_match_documented_values():
     """Verify injected fault rates match the documented values.
     

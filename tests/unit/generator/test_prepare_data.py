@@ -189,6 +189,7 @@ class TestSampleDeviceProfiles:
         out = sample_device_profiles(identity_df, select_accounts(stream))
         assert list(out["device_id"]) == [f"D{i:06d}" for i in range(1, len(out) + 1)]
 
+    @pytest.mark.quality
     def test_device_type_shares_follow_reference_distribution(self, identity_df):
         """Verify sampled device types follow the reference distribution.
         
@@ -257,6 +258,7 @@ class TestAssignLoginScenarios:
         assert set(out["login_scenario"]) <= set(LOGIN_SCENARIOS)
         assert "login_scenario" not in accounts.columns
 
+    @pytest.mark.quality
     def test_shares_match_documented_mix(self):
         """Verify scenario and activity shares match the documented mix.
 
@@ -337,6 +339,7 @@ class TestGenerateLoginEvents:
             assert sequence["event_time"].is_monotonic_increasing
             assert sequence["event_time"].is_unique
 
+    @pytest.mark.quality
     def test_events_lie_between_split_and_first_transaction(
         self, events, accounts_with_devices
     ):
@@ -408,6 +411,7 @@ class TestGenerateLoginEvents:
         assert all(1 <= gap <= 60 for gap in gaps("C_MULTIPLE_FAILURES"))
         assert all(1 <= gap <= 3 * HOUR for gap in gaps("C_MULTIPLE_LOGINS"))
 
+    @pytest.mark.quality
     def test_step_and_second_offset_are_consistent_with_event_time(self, events):
         """Verify step and second_offset are consistent with event_time.
         
@@ -510,6 +514,7 @@ def _run_generation(paysim_df, identity_df):
     return generate_login_events(assign_login_scenarios(accounts), SPLIT_STEP)
 
 
+@pytest.mark.quality
 def test_generation_is_deterministic_under_project_seed(paysim_df, identity_df):
     """Verify login-event generation is reproducible under the project seed.
     

@@ -130,6 +130,7 @@ def test_engineer_features(pipeline, sample_df):
     assert row["amount_to_balance_ratio"] == pytest.approx(0.2)
 
 
+@pytest.mark.quality
 def test_engineer_features_zero_balance(pipeline, sample_df):
     """Verify a zero originating balance yields a null ratio, not a division error.
 
@@ -145,6 +146,7 @@ def test_engineer_features_zero_balance(pipeline, sample_df):
     assert all(row["amount_to_balance_ratio"] is None for row in result.collect())
 
 
+@pytest.mark.quality
 def test_aggregate_data(pipeline, sample_df):
     """Verify per-step and per-type aggregates conserve counts and amounts.
 
