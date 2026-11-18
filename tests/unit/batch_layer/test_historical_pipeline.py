@@ -92,6 +92,14 @@ def sample_df(spark):
 
 
 def test_validate_data_missing_columns(pipeline, sample_df):
+    """Verify validation rejects a frame that lacks a required column.
+
+    Steps:
+    1. Drop the amount column from the three-row sample frame.
+    2. Call validate_data on the reduced frame.
+    Expected:
+    - ValueError whose message starts with "Missing columns" is raised.
+    """
     df = sample_df.drop("amount")
 
     with pytest.raises(ValueError, match="Missing columns"):
@@ -99,6 +107,17 @@ def test_validate_data_missing_columns(pipeline, sample_df):
 
 
 def test_engineer_features(pipeline, sample_df):
+    """Verify engineered features are computed from the raw columns as specified.
+
+    Steps:
+    1. Call engineer_features on the sample frame.
+    2. Read the row of account C1 (TRANSFER of 100 from balance 500 to 400).
+    Expected:
+    - amount_log equals log(1 + 100) = 4.61512.
+    - hour_of_day is 0 and day is 1 for event_time 2026-01-01 00:02:00.
+    - orig_balance_diff and dest_balance_diff both equal 100.0.
+    - amount_to_balance_ratio equals 100 / 500 = 0.2.
+    """
     result = pipeline.engineer_features(sample_df)
 
     row = result.filter("nameOrig = 'C1'").first()
@@ -112,6 +131,14 @@ def test_engineer_features(pipeline, sample_df):
 
 
 def test_engineer_features_zero_balance(pipeline, sample_df):
+    """Verify a zero originating balance yields a null ratio, not a division error.
+
+    Steps:
+    1. Set oldbalanceOrg to 0 in every row of the sample frame.
+    2. Call engineer_features and collect amount_to_balance_ratio.
+    Expected:
+    - amount_to_balance_ratio is null in every row (no infinity, no exception).
+    """
     df = sample_df.withColumn("oldbalanceOrg", sample_df["oldbalanceOrg"] * 0)
     result = pipeline.engineer_features(df)
 
@@ -119,6 +146,15 @@ def test_engineer_features_zero_balance(pipeline, sample_df):
 
 
 def test_aggregate_data(pipeline, sample_df):
+    """Verify per-step and per-type aggregates conserve counts and amounts.
+
+    Steps:
+    1. Call aggregate_data on the sample frame (two rows in step 1, one in step 2).
+    2. Read the step-1 row of hourly_stats and the TRANSFER row of type_stats.
+    Expected:
+    - Step 1: transaction_count 2, total_amount 150.0, avg_amount 75.0.
+    - TRANSFER: transaction_count 2, total_amount 300.0, avg_amount 150.0.
+    """
     hourly_stats, _, type_stats = pipeline.aggregate_data(sample_df)
     hourly = hourly_stats.filter("step = 1").first()
 
