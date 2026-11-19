@@ -23,6 +23,7 @@ docker compose up -d
 4. Check:
 - if buckets were added to Minio: [http://localhost:9001](http://localhost:9001)
 - if Airflow was initialized (might take a couple minutes due to downloading libraries): [http://localhost:8082](http://localhost:8082), click on DAGs to execute them 
+- if Cassandra tables were created (about a minute after start): [http://localhost:3000](http://localhost:3000), keyspace `fraud_detection` should list 7 tables
 
 
 

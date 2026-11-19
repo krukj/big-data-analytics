@@ -105,7 +105,6 @@ services:
   cassandra:
     image: cassandra:5.0
     container_name: cassandra
-    profiles: ["serving"]
     ports:
       - "9042:9042"
     environment:
@@ -126,7 +125,6 @@ services:
   cassandra-init:
     image: cassandra:5.0
     container_name: cassandra-init
-    profiles: ["serving"]
     depends_on:
       cassandra:
         condition: service_healthy
@@ -139,7 +137,6 @@ services:
   cassandra-web:
     image: ipushc/cassandra-web
     container_name: cassandra-web
-    profiles: ["serving"]
     ports:
       - "3000:8083"
     environment:
