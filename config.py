@@ -32,7 +32,12 @@ MINIO_USER = os.getenv("MINIO_ROOT_USER", "admin")
 MINIO_PASSWORD = os.getenv("MINIO_ROOT_PASSWORD", "password123")
 MINIO_BUCKET_BATCH = "historical-data"
 MINIO_HISTORICAL_OBJECT_NAME = "paysim/historical_paysim.parquet"
-
+BUCKET_NAMES = [
+    "historical-data",
+    "clean-transactions-data",
+    "clean-logins-data",
+    "processed-data",
+]
 
 SPLIT_STEP = 500
 RANDOM_SEED = 42

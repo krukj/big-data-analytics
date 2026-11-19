@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 
 from config import (
     BATCH_PARQUET,
+    BUCKET_NAMES,
     MINIO_HISTORICAL_OBJECT_NAME,
     MINIO_PASSWORD,
     MINIO_URL,
@@ -22,14 +23,8 @@ s3_client = boto3.client(
     aws_access_key_id=MINIO_USER,
     aws_secret_access_key=MINIO_PASSWORD,
 )
-bucket_names = [
-    "historical-data", 
-    "clean-transactions-data", 
-    "clean-logins-data",
-    "processed-data",
-]
 
-for bn in bucket_names:
+for bn in BUCKET_NAMES:
     try:
         s3_client.head_bucket(Bucket=bn)
         logger.info(f"Bucket '{bn}' already exists.")

@@ -457,39 +457,39 @@ GenAI tools will be used as a supportive assistance. Specifically, it will be us
 \footnotesize
 
 \begin{tabularx}{\linewidth}{|>{\RaggedRight\arraybackslash}p{2cm}|*{4}{>{\RaggedRight\arraybackslash}X|}}
-\hline
+\toprule
 
 \textbf{\mbox{Team} \mbox{Member}}
     & \textbf{M1} & \textbf{M2} & \textbf{M3} & \textbf{M4} \\
-    \hline
+    \toprule
 
     \textbf{Julia Kruk}
     & Defining system infrastructure, investigation of the technologies.
     & System containerization via Docker, streaming real-time transaction data to Apache Kafka, and implementing low-latency preprocessing (handling out-of-order events and missing values).
     & Integrating streaming preprocessing with the analytical module and optimizing processing latency.
     & Finalizing containerization, deployment configuration, and end-to-end integration testing. \\
-    \hline
+    \midrule
 
     \textbf{\mbox{Nadia} \mbox{Serafin}}
     & Investigating data sources, defining synthetic data assumptions, defining user functionalities.
     & Generating synthetic account activity data and building historical data pipelines with Apache Spark.
     & Developing and evaluating anomaly detection models, performing EDA, and selecting evaluation metrics.
     & Optimizing anomaly detection models and evaluating final analytical results. \\
-    \hline
+    \midrule
 
     \textbf{Barbara Seweryn}
     & Defining data storage requirements, historical data partitioning, and batch processing assumptions.
     & Managing MinIO storage, implementing historical data ingestion, and simulating real-world stream disturbances.
     & Configuring Apache Airflow for automated model re-training and integrating batch processing with the analytical module.
     & Finalizing automated workflows, validating pipeline reliability, and performing end-to-end testing. \\
-    \hline
+    \midrule
 
     \textbf{Zuzanna Sieńko}
     & Defining business context and business process diagram. Investigating reserve data source.
     & Designing Apache Cassandra tables (Real-Time and Batch Views) and preparing data storage for analytical results.
     & Executing real-time ML inference and developing the Streamlit dashboard.
     & Finalizing the dashboard, anomaly alerts, and visualizations, and evaluating the solution from a business perspective. \\
-    \hline
+    \bottomrule
 
 \end{tabularx}
 \end{table}
@@ -592,11 +592,11 @@ Synthetic login events were generated exclusively for the streaming period (step
 
 Login events are assigned timestamps with second-level precision, allowing multiple events to occur within a single simulation step and enabling their chronological ordering relative to financial transactions. Each account with generated login activity is assigned a single device identifier and a consistent set of device characteristics. The dataset contains only complete device profiles selected from IEEE-CIS, avoiding missing values in the five device attributes used for generation. The generated records are also linked to existing PaySim source accounts through \texttt{account\_id}.
 
-\subsubsection{Synthetic Login Events - generation process}
+\subsubsection{Synthetic Login Events -- generation process}
 The generation process consisted of the following steps:
 \begin{enumerate}
-    \item Account selection - all accounts from the streaming transaction PaySim dataset were selected for synthetic login event generation. The implementation also supports selecting a smaller sample of accounts for testing purposes. For each selected account, the first transaction step is determined to ensure that login events were generated before the associated transaction.
-    \item Device profile selection and assignment - five device attributes were selected from the IEEE-CIS identity dataset: \texttt{DeviceType} (device category), \texttt{id\_30} (operating system), \texttt{id\_31} (browser), \texttt{DeviceInfo} (additional device information), and \texttt{id\_33} (screen resolution).\\
+    \item Account selection -- all accounts from the streaming transaction PaySim dataset were selected for synthetic login event generation. The implementation also supports selecting a smaller sample of accounts for testing purposes. For each selected account, the first transaction step is determined to ensure that login events were generated before the associated transaction.
+    \item Device profile selection and assignment -- five device attributes were selected from the IEEE-CIS identity dataset: \texttt{DeviceType} (device category), \texttt{id\_30} (operating system), \texttt{id\_31} (browser), \texttt{DeviceInfo} (additional device information), and \texttt{id\_33} (screen resolution).\\
     Records containing missing values in any of these attributes were excluded. Unique complete device profiles were identified along with their frequencies.\\
     To preserve the original proportions of device types, profiles were sampled based on two factors: the frequency of each device type in the original dataset and the frequency of each complete profile within that device type:
     \[
@@ -604,23 +604,34 @@ The generation process consisted of the following steps:
     \]
     where $P(p_i)$ is the sampling probability of device profile $p_i$, $P(d_i)$ is the proportion of device type $d_i$ in the original dataset (excluding records with unknown device types), and $P(p_i \mid d_i)$ is the relative frequency of profile $p_i$ among complete profiles of that device type.\\
     The resulting weights were normalized to sum to one. Each selected account was then assigned one sampled device profile and a unique \texttt{device\_id}.
-    \item Login scenario and activity pattern assignment - each account was randomly assigned one of four login scenarios: NORMAL\_LOGIN (65\%), SINGLE\_FAILURE (20\%), MULTIPLE\_FAILURES (5\%), or MULTIPLE\_LOGINS (10\%). Additionally, one of two activity patterns was assigned: SHORT\_ACTIVITY (70\%) or MIXED\_ACTIVITY (30\%). The login scenario determined the sequence of successful and failed login attempts, while the activity pattern determined their temporal distribution.
-    \item Login event generation - login sequences were generated before each account's first streaming transaction. For SHORT\_ACTIVITY, events were placed within the preceding six hours. For MIXED\_ACTIVITY, events were usually generated within the same six-hour window (80\% probability), but could also occur earlier in the streaming period (20\% probability). Accounts whose first transaction occurred in the first streaming step were excluded from event generation.
-    \item Timestamp calculation - each generated login event received an \texttt{event\_time} value representing seconds passed since the beginning of the simulation. The corresponding \texttt{step} and \texttt{second\_offset} were calculated from this timestamp. To maintain consistency with the prepared transaction data, where all transactions were assigned to the beginning of their simulation steps (\texttt{second\_offset} = 0), login events were assigned timestamps with second-level precision, ensuring that they occurred before each account's first transaction.
+    \item Login scenario and activity pattern assignment -- each account was randomly assigned one of four login scenarios: NORMAL\_LOGIN (65\%), SINGLE\_FAILURE (20\%), MULTIPLE\_FAILURES (5\%), or MULTIPLE\_LOGINS (10\%). Additionally, one of two activity patterns was assigned: SHORT\_ACTIVITY (70\%) or MIXED\_ACTIVITY (30\%). The login scenario determined the sequence of successful and failed login attempts, while the activity pattern determined their temporal distribution.
+    \item Login event generation -- login sequences were generated before each account's first streaming transaction. For SHORT\_ACTIVITY, events were placed within the preceding six hours. For MIXED\_ACTIVITY, events were usually generated within the same six-hour window (80\% probability), but could also occur earlier in the streaming period (20\% probability). Accounts whose first transaction occurred in the first streaming step were excluded from event generation.
+    \item Timestamp calculation -- each generated login event received an \texttt{event\_time} value representing seconds passed since the beginning of the simulation. The corresponding \texttt{step} and \texttt{second\_offset} were calculated from this timestamp. To maintain consistency with the prepared transaction data, where all transactions were assigned to the beginning of their simulation steps (\texttt{second\_offset} = 0), login events were assigned timestamps with second-level precision, ensuring that they occurred before each account's first transaction.
 \end{enumerate}
 
 \section{Data Acquisition and Transformation}
 \subsection{Data Acquisition and Preparation}
 Data acquisition and preparation were implemented in Python using Pandas and NumPy. The PaySim and IEEE-CIS datasets were loaded from CSV files and prepared as described in Section~\ref{section:data_sets_description}. The resulting datasets were saved in Parquet format: \texttt{paysim\_batch.parquet} for historical processing, and \texttt{paysim\_stream.parquet} and \texttt{login\_events.parquet} for streaming simulation. Parquet was selected as a columnar storage format suitable for efficient data processing with Apache Spark.
 
-\subsection{Streaming Data Simulation and Kafka Ingestion}
+\subsection{Streaming Data Simulation and Kafka Ingestion}\label{sec:stream-sim}
+The simulation of streams was implemented in \texttt{StreamProducer} class. The data from \texttt{paysim\_stream.parquet} and \texttt{login\_events.parquet} files is loaded and processed:
+\begin{enumerate}
+    \item Files are devided into streams based on the value in column `step' (each unique `step' value is a next stream).
+    \item Paysim data is corrupted:
+    \begin{itemize}
+        \item with probability $p = 2\%$ value in randomely selected column is removed;
+        \item with probability $p = 0.5\%$ row is duplicated;
+        \item with probability $p = 1\%$ row is delayed and sent in the next stream;
+    \end{itemize}
+    \item Streams are produced to Kafka \texttt{raw-transactions} and \texttt{raw-logins} topics every 10 seconds .
+\end{enumerate}
 
-\subsection{Historical Data Processing with Apache Spark}
+\subsection{Historical Data Processing with Apache Spark}\label{sec:historical}
 A historical data processing pipeline was implemented using PySpark to validate, transform, and aggregate transaction data. The pipeline consists of the following stages:
 \begin{enumerate}
-    \item Data loading - historical transaction data is loaded from MinIO in Parquet format using Apache Spark and the S3A connector.
-    \item Data validation - the pipeline checks the presence of required columns and identifies missing values, negative transaction amounts, invalid transaction types, and simulation steps outside the historical data range (1–500). Validation results are logged for inspection.
-    \item Feature engineering - six additional features are calculated to provide information about transaction amounts, account balances, and temporal patterns:
+    \item Data loading -- historical transaction data is loaded from MinIO in Parquet format using Apache Spark and the S3A connector.
+    \item Data validation -- the pipeline checks the presence of required columns and identifies missing values, negative transaction amounts, invalid transaction types, and simulation steps outside the historical data range (1–-500). Validation results are logged for inspection.
+    \item Feature engineering -- six additional features are calculated to provide information about transaction amounts, account balances, and temporal patterns:
     \begin{table}[H]
     \centering
     \caption{Features generated during historical data processing.}
@@ -640,11 +651,10 @@ A historical data processing pipeline was implemented using PySpark to validate,
     \end{tabular}
     \end{table}
 
-    \item Data aggregation - three aggregated datasets were created to summarize transaction activity and provide statistics for the dashboard further in the project.
+    \item Data aggregation -- three aggregated datasets were created to summarize transaction activity and provide statistics for the dashboard further in the project.
     \begin{table}[H]
         \centering
-        \caption{Aggregations generated during historical data processing.}
-        \label{tab:historical_aggregations}
+        \caption{Aggregations generated during historical data processing.}\label{tab:historical_aggregations}
         \small
         \begin{tabular}{lp{9cm}}
             \toprule
@@ -657,7 +667,7 @@ A historical data processing pipeline was implemented using PySpark to validate,
         \end{tabular}
     \end{table}
 
-    \item Data storage - the enhanced transaction dataset and the three aggregated datasets were saved to MinIO in Parquet format for further processing and analysis.
+    \item Data storage -- the enhanced transaction dataset and the three aggregated datasets were saved to MinIO in Parquet format for further processing and analysis.
 
 \end{enumerate}
 
@@ -670,16 +680,15 @@ The storage container is defined in the \texttt{docker-compose.yml} file as \tex
 
 The storage bucket structure is initialized upon startup in the \texttt{run\_minio.py} script. The script connects to the storage endpoint using root credentials, and ensures that required buckets exist before data ingestion or processing commences. If a bucket does not exist, it is created. The bucket structure is as follows:
 \begin{itemize}
-    \item \texttt{historical-data} bucket: Stores the historical PaySim dataset (steps 1-500), which is uploaded during initial setup and serves as the core data source for batch historical processing.
+    \item \texttt{historical-data} bucket: Stores the historical PaySim dataset (steps 1--500), which is uploaded during initial setup and serves as the core data source for batch historical processing.
     \item \texttt{clean-transactions-data} bucket: Contains cleaned, deduplicated, and validated streaming transactions. Populated by the stream consumer pipeline from Kafka messages, which cleans incoming transactions and stores them in the bucket.
     \item \texttt{clean-logins-data} bucket: Analogous to the \texttt{clean-transactions-data} bucket, this bucket stores cleaned streaming login events. The stream consumer pipeline processes incoming login events from Kafka, performs validation and cleaning, and saves them in this bucket.
     \item \texttt{processed-data} bucket: Will contain the processed datasets generated by the batch processing pipeline. This bucket is used for storing the enhanced historical dataset and aggregated statistics, which are later used for model training and dashboard visualizations. This pipeline has not yet been included in Apache Airflow, but will be integrated in the next project phase.
 \end{itemize}
 
-\subsection{Serving Layer - Apache Cassandra}
-\label{sec:cassandra}
+\subsection{Serving Layer -- Apache Cassandra}\label{sec:cassandra}
 
-The serving layer keeps the real-time and batch views read by the Streamlit dashboard in Apache Cassandra 5.0, run as a single-node service in \texttt{docker-compose.yml}. 
+The serving layer keeps the real-time and batch views will be read by the Streamlit dashboard in Apache Cassandra 5.0, run as a single-node service in \texttt{docker-compose.yml}. 
 The schema (\texttt{serving\_layer/schema.cql}, keyspace \texttt{fraud\_detection}) is applied automatically at start-up.
 The tables were designed query-first: each table serves one dashboard query, the partition key is the attribute the dashboard filters on, and the clustering key gives the order in which rows are read.
 
@@ -717,10 +726,36 @@ Two design choices follow from the PM1 assumptions. First, real-time rows are ne
 Second, batch views are overwritten after each re-training (Section~\ref{sec:assumptions}).
 
 The schema was verified on the running stack: the seven tables are created by \texttt{cassandra-init}, and a round-trip test (insert into \texttt{transactions\_by\_step} and \texttt{alerts\_by\_step}, read back by \texttt{step}) returned the inserted rows.
-Loading the views with data - the scored stream from the speed layer and the Spark aggregates from the batch layer - is part of Milestone 3, as both producers are completed in that phase.
+Loading the views with data -- the scored stream from the speed layer and the Spark aggregates from the batch layer -- is part of Milestone 3, as both producers are completed in that phase.
 
 
 \section{System Architecture}
+\subsection{Diagram, description and data flows}
+Figure \ref{fig:archm2} shows updated system architecture. The description of data flows is limited to the part of the system that is already implemented.
+\subsection{Containerization with Docker}
+The system is contenerized using Docker. Docker images are used to run Apache Kafka, Silo, Apache Cassandra, Apache Airflow, Postgres (for Apache Airflow), and Apache Spark. After running \texttt{docker compose up} the system starts to run -- Silo buckets and Cassandra tables are created, Kafka starts to produce messages.
+\subsection{Stream data flow}
+PaySim real-time and synthetic account data are corrupted (as described in Section~\ref{sec:stream-sim}) and transformed into streams that are sent every 10 seconds to Kafka topics. Kafka consumer in batch layer is triggered by Apache Airflow -- every 30 seconds a DAG is run to consume latest messages, repair corrupted streams and save them to buckets in Silo.
+\subsection{Historical data}
+PaySim historical data are saved to Silo bucket imediately after starting the Docker containers. Then, they are processed using Apache Spark as described in Section~\ref{sec:historical}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{report_plots/archm2.png}
+    \caption{Updated system architecture}
+    \label{fig:archm2}
+\end{figure}
+
+\subsection{Technologies and tools}
+Currently used tools include:
+\begin{itemize}
+    \item Docker -- every external tool is used via its Docker image;
+    \item Apache Kafka -- producer and consumer are implemented as fields in classes \texttt{StreamProducer} and \texttt{StreamConsumer}, the former class produces messages (streams) to two topics, the latter consumes cleaned streams;
+    \item Silo -- historical data and cleaned stream data are stored in Silo buckets;
+    \item Apache Airflow -- orchestrates uploading cleaned streams to Silo;
+    \item Apache Cassandra -- 
+    \item Apache Spark -- used for feature engineering applied to historical data 
+\end{itemize}
+\subsection{Data flows}
 
 
 \section{Analytical Approach}
