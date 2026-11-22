@@ -433,23 +433,6 @@ Each assumption refers to an element of Figure~\ref{fig:architecture_diagram}.
 \noindent \textbf{Serving (Cassandra $\rightarrow$ Streamlit).} The dashboard reads only from Cassandra; real-time views are partitioned by \texttt{step}. All timestamps are simulated; wall-clock time only paces the replay.
 
 
-
-\section{Planned use of GenAI}
-GenAI tools will be used as a supportive assistance. Specifically, it will be used for:
-\begin{itemize}
-    \item help with research;
-    \item code assistance to explore implementation alternatives;
-    \item styling the dashboard (e.g., CSS);
-    \item debugging potential errors;
-    \item grammar improvement of the report, creating LaTex tables and diagrams.
-\end{itemize}
-
-Links to LLM conversations:
-\begin{itemize}
-    \item \href{https://chatgpt.com/share/6af975cb-3cb0-83eb-9d00-6415159ec66b}{Conversation 1}
-    \item \href{https://chatgpt.com/share/6b030060-cb88-83ed-bb4f-f7726704a61b}{Conversation 2}
-\end{itemize}
-
 \section{Preliminary allocation of tasks and responsibilities}
 
 \renewcommand{\arraystretch}{1.4}
@@ -774,6 +757,22 @@ When a new transaction is processed, the model will assign an anomaly score to i
 Following this approach, the batch layer will be responsible for training the model on historical data and re-training the model periodically on new batches of data. The re-training will be automated and triggered by Apache Airflow.
 In the speed layer predictions for incoming transactions will be made and suspicious transactions will be flagged. 
 
+\section{Planned use of GenAI}
+GenAI tools will be used as a supportive assistance. Specifically, it will be used for:
+\begin{itemize}
+    \item help with research;
+    \item code assistance to explore implementation alternatives;
+    \item styling the dashboard (e.g., CSS);
+    \item debugging potential errors;
+    \item grammar improvement of the report, creating LaTex tables and diagrams.
+\end{itemize}
+
+Links to LLM conversations:
+\begin{itemize}
+    \item \href{https://chatgpt.com/share/6af975cb-3cb0-83eb-9d00-6415159ec66b}{Conversation 1}
+    \item \href{https://chatgpt.com/share/6b030060-cb88-83ed-bb4f-f7726704a61b}{Conversation 2}
+    \item \href{https://share.gemini.google/Gyx7zNGD21rM}{Conversation 3}
+\end{itemize} 
 
 \newpage
 % ----------------------------  LIST OF FIGURES --------------------------------
