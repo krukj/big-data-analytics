@@ -586,8 +586,8 @@ The generation process consisted of the following steps:
 \begin{enumerate}
     \item Account selection -- all accounts from the streaming transaction PaySim dataset were selected for synthetic login event generation. The implementation also supports selecting a smaller sample of accounts for testing purposes. For each selected account, the first transaction step is determined to ensure that login events were generated before the associated transaction.
     \item Device profile selection and assignment -- five device attributes were selected from the IEEE-CIS identity dataset: \texttt{DeviceType} (device category), \texttt{id\_30} (operating system), \texttt{id\_31} (browser), \texttt{DeviceInfo} (additional device information), and \texttt{id\_33} (screen resolution).\\
-    Records containing missing values in any of these attributes were excluded. Unique complete device profiles were identified along with their frequencies.\\
-    To preserve the original proportions of device types, profiles were sampled based on two factors: the frequency of each device type in the original dataset and the frequency of each complete profile within that device type:
+    Records containing missing values in any of these attributes were excluded. Unique complete device profiles were identified along with their frequencies, computed as the number of identity records in which each profile appears.\\
+    To preserve the original proportions of device types, which may be distorted by the exclusion of incomplete records, profiles were sampled based on two factors: the frequency of each device type in the original dataset and the frequency of each complete profile within that device type:
     \[
         P(p_i) = P(d_i) \cdot P(p_i \mid d_i)
     \]
