@@ -7,12 +7,12 @@
 - `train_identity.csv`
 2. From the main directory run:
 ```bash
-PYTHONPATH=. uv run src/big_data_analytics/generator/prepare_data.py
+PYTHONPATH=. uv run generator/prepare_data.py
 ```
 or for Windows PowerShell:
 ```bash
 $env:PYTHONPATH="."
-uv run src/big_data_analytics/generator/prepare_data.py
+uv run generator/prepare_data.py
 ```
 to create `parquet` files.
 
@@ -20,7 +20,12 @@ to create `parquet` files.
 ```bash
 docker compose up -d
 ```
+4. Run stream simulation by starting containers (you might do it in a separate terminal):
+```bash
+docker compose -f docker-compose-generator.yaml up -d
+```
 4. Check:
+- if data is generated: logs of generator container
 - if buckets were added to Minio: [http://localhost:9001](http://localhost:9001)
 - if Airflow was initialized (might take a couple minutes due to downloading libraries): [http://localhost:8082](http://localhost:8082), click on DAGs to execute them 
 - if Cassandra tables were created (about a minute after start): [http://localhost:3000](http://localhost:3000), keyspace `fraud_detection` should list 7 tables

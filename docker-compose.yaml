@@ -59,18 +59,6 @@ services:
       /opt/kafka/bin/kafka-topics.sh   --bootstrap-server kafka:19092 --create --if-not-exists --topic preprocessed-transactions --partitions 3 --replication-factor 1 &&
       echo 'Topics raw-transactions, raw-logins and preprocessed-transactions created.'"
 
-  generator:
-    build:
-      context: . # main folder
-      dockerfile: ./src/big_data_analytics/generator/Dockerfile
-    environment:
-      - KAFKA_BROKER=kafka:19092
-    volumes:
-      - ./data:/app/data
-    networks:
-      - kafka-network
-    depends_on:
-      - kafka
 
   minio:
     image: pgsty/silo:latest

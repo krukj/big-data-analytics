@@ -1,0 +1,17 @@
+services:
+  generator:
+    build:
+      context: .
+      dockerfile: ./simulator/Dockerfile
+    environment:
+      - KAFKA_BROKER=kafka:19092
+    volumes:
+      - ./data:/app/data
+    networks:
+      - kafka-network
+
+
+networks:
+  kafka-network:
+    external: true
+    name: big-data-analytics_kafka-network
