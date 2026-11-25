@@ -34,6 +34,8 @@ MINIO_BUCKET_BATCH = "historical-data"
 MINIO_HISTORICAL_OBJECT_NAME = "paysim/historical_paysim.parquet"
 BUCKET_NAMES = [
     "historical-data",
+    "raw-transactions-data",
+    "raw-logins-data",
     "clean-transactions-data",
     "clean-logins-data",
     "processed-data",

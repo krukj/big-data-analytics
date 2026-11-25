@@ -1,6 +1,14 @@
 import os
 from pathlib import Path
 
+from pyspark.sql.types import (
+    DoubleType,
+    IntegerType,
+    StringType,
+    StructField,
+    StructType,
+)
+
 REPO_ROOT = Path(os.getenv("REPO_ROOT", Path(__file__).resolve().parents[3]))
 # data
 RAW_KAGGLE_DIR = REPO_ROOT / "data" / "raw_kaggle"
@@ -28,7 +36,44 @@ MINIO_BUCKET_BATCH = "historical-data"
 MINIO_HISTORICAL_OBJECT_NAME = "paysim/historical_paysim.parquet"
 BUCKET_NAMES = [
     "historical-data",
+    "raw-transactions-data",
+    "raw-logins-data",
     "clean-transactions-data",
     "clean-logins-data",
     "processed-data",
 ]
+SPARK_CONFIG = (
+    "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0,"
+    "org.apache.hadoop:hadoop-aws:3.3.4"
+)
+
+TRANSACTIONS_SCHEMA = StructType(
+    [
+        StructField("step", IntegerType()),
+        StructField("type", StringType()),
+        StructField("amount", DoubleType()),
+        StructField("nameOrig", StringType()),
+        StructField("oldbalanceOrg", DoubleType()),
+        StructField("newbalanceOrig", DoubleType()),
+        StructField("nameDest", StringType()),
+        StructField("oldbalanceDest", DoubleType()),
+        StructField("newbalanceDest", DoubleType()),
+    ]
+)
+
+LOGINS_SCHEMA = StructType(
+    [
+        StructField("event_id", StringType()),
+        StructField("account_id", StringType()),
+        StructField("device_id", StringType()),
+        StructField("event_type", StringType()),
+        StructField("step", IntegerType()),
+        StructField("second_offset", IntegerType()),
+        StructField("event_time", IntegerType()),
+        StructField("device_type", StringType()),
+        StructField("operating_system", StringType()),
+        StructField("browser", StringType()),
+        StructField("device_info", StringType()),
+        StructField("screen_resolution", StringType()),
+    ]
+)

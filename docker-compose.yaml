@@ -162,7 +162,10 @@ services:
       - kafka-network
 
   airflow-init:
-    image: apache/airflow:2.5.0
+    build:
+      context: .
+      dockerfile: ./src/big_data_analytics/airflow/Dockerfile
+    # image: apache/airflow:2.5.0
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -171,7 +174,6 @@ services:
       _AIRFLOW_WWW_USER_CREATE: "true"
       _AIRFLOW_WWW_USER_USERNAME: "admin"
       _AIRFLOW_WWW_USER_PASSWORD: "admin"
-      _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-apache-spark confluent-kafka pandas"
     networks:
       - kafka-network
     volumes:
@@ -184,7 +186,9 @@ services:
       - postgres
 
   airflow-webserver:
-    image: apache/airflow:2.5.0
+    build:
+      context: .
+      dockerfile: ./src/big_data_analytics/airflow/Dockerfile
     restart: always
     depends_on:
       - postgres
@@ -196,7 +200,6 @@ services:
       AIRFLOW__WEBSERVER__SECRET_KEY: "ThisIsNotASecretKey"
       AIRFLOW_CONN_POSTGRES_DEFAULT: postgresql+psycopg2://airflow:airflow@postgres/airflow
       PYTHONPATH: /opt/airflow:/opt/airflow/
-      _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-apache-spark confluent-kafka pandas"
     volumes:
       - ./src/big_data_analytics/airflow/dags:/opt/airflow/dags
       - ./src/big_data_analytics/airflow/logs:/opt/airflow/logs
@@ -210,7 +213,9 @@ services:
       - kafka-network
 
   airflow-scheduler:
-    image: apache/airflow:2.5.0
+    build:
+      context: .
+      dockerfile: ./src/big_data_analytics/airflow/Dockerfile
     restart: always
     depends_on:
       - postgres
@@ -221,7 +226,6 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${FERNET_KEY:-46BKJoQYlPPOexq0OhDZnIlUkKFpx17v03Y3G7eO2H0=}
       AIRFLOW_CONN_POSTGRES_DEFAULT: postgresql+psycopg2://airflow:airflow@postgres/airflow
       PYTHONPATH: /opt/airflow:/opt/airflow
-      _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-apache-spark confluent-kafka pandas"
       KAFKA_BROKER: kafka:19092
       MINIO_URL: http://minio:9000
       MINIO_ROOT_USER: admin

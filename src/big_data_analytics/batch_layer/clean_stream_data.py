@@ -1,3 +1,5 @@
+# this file will be deleted, only cleaning part wil be used
+
 import json
 import logging
 import tempfile
