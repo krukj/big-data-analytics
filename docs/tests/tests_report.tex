@@ -51,8 +51,7 @@ processes, and the tabular documentation of every test case.
 generation of synthetic login events. \\
 \code{generator/stream\_generator.py} & Acquisition: step-wise replay of the stream to
 Kafka with controlled fault injection. \\
-\code{batch\_layer/clean\_stream\_data.py} & Pre-processing: de-duplication and imputation
-of missing financial fields before storage in MinIO. \\
+\code{batch\_layer/stream\_consumer.py} & Consuming the data from Kafka topics, saving in buckets + partitioning. \\
 \code{batch\_layer/historical\_pipeline.py} & Transformation: validation, feature
 engineering and aggregation of historical data in Spark. \\
 \bottomrule
@@ -80,7 +79,7 @@ replaced by fakes, no service is needed. Runs in CI on every pull request.
 stack is provisioned as designed: buckets, topics and partitions, DAG registration and
 schedule.
 \item[Integration] \code{tests/integration/test\_stream\_to\_minio}. One end-to-end run of
-the stream path: Kafka $\rightarrow$ Airflow DAG $\rightarrow$ cleaning $\rightarrow$ MinIO.
+the stream path: Kafka producer $\rightarrow$ Airflow DAG $\rightarrow$ Kafka consumer $\rightarrow$ MinIO.
 \end{description}
 
 Deployment checks and the integration test share the \code{integration} marker and
