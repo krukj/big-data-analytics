@@ -6,6 +6,7 @@
 \usepackage{array}
 \usepackage{pdflscape}
 \usepackage{verbatim}
+\usepackage{fvextra}
 \usepackage{float}
 \usepackage[hidelinks]{hyperref}
 
@@ -15,7 +16,7 @@
 \renewcommand{\_}{\plainunderscore\allowbreak}
 \setlength{\emergencystretch}{3em}
 \newcommand{\evidencelog}[1]{%
-  \IfFileExists{#1}{{\footnotesize\verbatiminput{#1}}}{\todo{add \detokenize{#1}}}}
+  \IfFileExists{#1}{{\scriptsize\VerbatimInput[breaklines=true,breakanywhere=true]{#1}}}{\todo{add \detokenize{#1}}}}
 \newcommand{\evidencefigure}[3][0.9\linewidth]{%
   \begin{figure}[H]\centering
   \IfFileExists{#2}{\includegraphics[width=#1]{#2}}{\fbox{\todo{add \detokenize{#2}}}}
@@ -104,13 +105,16 @@ Cassandra & \code{cassandra:5.0} \\
 
 The full run (stack started with \code{docker compose up -d}):
 \begin{verbatim}
-uv run pytest tests -v -ra --test-doc docs/tests/test_cases \
+uv run pytest tests -v -rA --test-doc docs/tests/test_cases \
     --html=docs/tests/evidence/pytest_report.html --self-contained-html \
     2>&1 | tee docs/tests/evidence/pytest_run.txt
 \end{verbatim}
 CI runs the same suite with \code{-m "not integration"}. The \code{--test-doc} option
 generates the tables in Sections~\ref{sec:summary} and~\ref{sec:cases} from the test
-docstrings and the outcomes of this run; they are not typed by hand.
+docstrings and the outcomes of this run; they are not typed by hand. Each test
+\code{print}s the values it observed next to the values it expects. \code{-rA} makes
+pytest list this captured output for passing tests in the run log, and
+\code{--test-doc} copies it into the \emph{Actual result} column.
 
 % ---------------------------------------------------------------------------------
 \section{Summary}

@@ -21,7 +21,7 @@ EXPECTED_BUCKETS = {
 
 def test_required_buckets_exist(s3):
     """Verify run_minio.py created every bucket the pipelines write to.
-    
+
     Steps:
     1. List the MinIO buckets with boto3.
     Expected:
@@ -29,12 +29,14 @@ def test_required_buckets_exist(s3):
         exist.
     """
     names = {bucket["Name"] for bucket in s3.list_buckets()["Buckets"]}
+    print(f"buckets in MinIO: {sorted(names)}")
+    print(f"missing buckets: {sorted(EXPECTED_BUCKETS - names) or 'none'}")
     assert EXPECTED_BUCKETS <= names
 
 
 def test_historical_dataset_is_uploaded(s3):
     """Verify the historical PaySim parquet is uploaded to MinIO.
-    
+
     Steps:
     1. Request the metadata (head_object) of paysim/historical_paysim.parquet in the
         historical-data bucket.
@@ -48,4 +50,6 @@ def test_historical_dataset_is_uploaded(s3):
         )
     except ClientError as error:
         pytest.fail(f"historical object missing: {error}")
+    print(f"object {MINIO_BUCKET_BATCH}/{MINIO_HISTORICAL_OBJECT_NAME} exists")
+    print(f"size: {head['ContentLength']} bytes (expected > 0)")
     assert head["ContentLength"] > 0

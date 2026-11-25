@@ -34,10 +34,10 @@ tests/unit/batch_layer/test_clean_stream_data.py::test_imputed_rows_satisfy_bala
 tests/unit/batch_layer/test_clean_stream_data.py::test_batch_with_fully_null_financial_column_is_cleaned[amount] PASSED [ 39%]
 tests/unit/batch_layer/test_clean_stream_data.py::test_batch_with_fully_null_financial_column_is_cleaned[oldbalanceOrg] PASSED [ 40%]
 tests/unit/batch_layer/test_clean_stream_data.py::test_batch_with_fully_null_financial_column_is_cleaned[newbalanceOrig] PASSED [ 42%]
-tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns ERROR [ 43%]
-tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features ERROR [ 45%]
-tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features_zero_balance ERROR [ 46%]
-tests/unit/batch_layer/test_historical_pipeline.py::test_aggregate_data ERROR [ 48%]
+tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns PASSED [ 43%]
+tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features PASSED [ 45%]
+tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features_zero_balance PASSED [ 46%]
+tests/unit/batch_layer/test_historical_pipeline.py::test_aggregate_data PASSED [ 48%]
 tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_is_exhaustive_and_disjoint PASSED [ 50%]
 tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_step_itself_belongs_to_batch PASSED [ 51%]
 tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_event_time_is_derived_from_step PASSED [ 53%]
@@ -72,312 +72,365 @@ tests/unit/generator/test_stream_generator.py::test_fault_rates_match_documented
 tests/unit/generator/test_stream_generator.py::test_produce_replays_every_row_once_in_step_order PASSED [ 98%]
 tests/unit/generator/test_stream_generator.py::test_delayed_row_is_re_emitted_in_the_following_step PASSED [100%]
 
-==================================== ERRORS ====================================
-_____________ ERROR at setup of test_validate_data_missing_columns _____________
-
-    @pytest.fixture(scope="module")
-    def spark():
-        spark = (
-            SparkSession.builder.master("local[1]")
-            .appName("HistoricalPipelineTests")
-            .config("spark.ui.enabled", "false")
-            .config("spark.sql.shuffle.partitions", "2")
->           .getOrCreate()
-             ^^^^^^^^^^^^^
-        )
-
-tests/unit/batch_layer/test_historical_pipeline.py:13: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <pyspark.sql.session.SparkSession.Builder object at 0x1227e74d0>
-
-    def getOrCreate(self) -> "SparkSession":
-        """Gets an existing :class:`SparkSession` or, if there is no existing one, creates a
-        new one based on the options set in this builder.
-    
-        .. versionadded:: 2.0.0
-    
-        .. versionchanged:: 3.4.0
-            Supports Spark Connect.
-    
-        Returns
-        -------
-        :class:`SparkSession`
-    
-        Examples
-        --------
-        This method first checks whether there is a valid global default SparkSession, and if
-        yes, return that one. If no valid global default SparkSession exists, the method
-        creates a new SparkSession and assigns the newly created SparkSession as the global
-        default.
-    
-        >>> s1 = SparkSession.builder.config("k1", "v1").getOrCreate()
-        >>> s1.conf.get("k1") == "v1"
-        True
-    
-        The configuration of the SparkSession can be changed afterwards
-    
-        >>> s1.conf.set("k1", "v1_new")
-        >>> s1.conf.get("k1") == "v1_new"
-        True
-    
-        In case an existing SparkSession is returned, the config options specified
-        in this builder will be applied to the existing SparkSession.
-    
-        >>> s2 = SparkSession.builder.config("k2", "v2").getOrCreate()
-        >>> s1.conf.get("k1") == s2.conf.get("k1") == "v1_new"
-        True
-        >>> s1.conf.get("k2") == s2.conf.get("k2") == "v2"
-        True
-        """
-        opts = dict(self._options)
-    
-        if is_remote_only():
-            from pyspark.sql.connect.session import SparkSession as RemoteSparkSession
-    
-            url = opts.get("spark.remote", os.environ.get("SPARK_REMOTE"))
-    
-            if url is None:
->               raise PySparkRuntimeError(
-                    errorClass="CONNECT_URL_NOT_SET",
-                    messageParameters={},
-                )
-E               pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
-
-.venv/lib/python3.13/site-packages/pyspark/sql/session.py:480: PySparkRuntimeError
-___________________ ERROR at setup of test_engineer_features ___________________
-
-    @pytest.fixture(scope="module")
-    def spark():
-        spark = (
-            SparkSession.builder.master("local[1]")
-            .appName("HistoricalPipelineTests")
-            .config("spark.ui.enabled", "false")
-            .config("spark.sql.shuffle.partitions", "2")
->           .getOrCreate()
-             ^^^^^^^^^^^^^
-        )
-
-tests/unit/batch_layer/test_historical_pipeline.py:13: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <pyspark.sql.session.SparkSession.Builder object at 0x1227e74d0>
-
-    def getOrCreate(self) -> "SparkSession":
-        """Gets an existing :class:`SparkSession` or, if there is no existing one, creates a
-        new one based on the options set in this builder.
-    
-        .. versionadded:: 2.0.0
-    
-        .. versionchanged:: 3.4.0
-            Supports Spark Connect.
-    
-        Returns
-        -------
-        :class:`SparkSession`
-    
-        Examples
-        --------
-        This method first checks whether there is a valid global default SparkSession, and if
-        yes, return that one. If no valid global default SparkSession exists, the method
-        creates a new SparkSession and assigns the newly created SparkSession as the global
-        default.
-    
-        >>> s1 = SparkSession.builder.config("k1", "v1").getOrCreate()
-        >>> s1.conf.get("k1") == "v1"
-        True
-    
-        The configuration of the SparkSession can be changed afterwards
-    
-        >>> s1.conf.set("k1", "v1_new")
-        >>> s1.conf.get("k1") == "v1_new"
-        True
-    
-        In case an existing SparkSession is returned, the config options specified
-        in this builder will be applied to the existing SparkSession.
-    
-        >>> s2 = SparkSession.builder.config("k2", "v2").getOrCreate()
-        >>> s1.conf.get("k1") == s2.conf.get("k1") == "v1_new"
-        True
-        >>> s1.conf.get("k2") == s2.conf.get("k2") == "v2"
-        True
-        """
-        opts = dict(self._options)
-    
-        if is_remote_only():
-            from pyspark.sql.connect.session import SparkSession as RemoteSparkSession
-    
-            url = opts.get("spark.remote", os.environ.get("SPARK_REMOTE"))
-    
-            if url is None:
->               raise PySparkRuntimeError(
-                    errorClass="CONNECT_URL_NOT_SET",
-                    messageParameters={},
-                )
-E               pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
-
-.venv/lib/python3.13/site-packages/pyspark/sql/session.py:480: PySparkRuntimeError
-____________ ERROR at setup of test_engineer_features_zero_balance _____________
-
-    @pytest.fixture(scope="module")
-    def spark():
-        spark = (
-            SparkSession.builder.master("local[1]")
-            .appName("HistoricalPipelineTests")
-            .config("spark.ui.enabled", "false")
-            .config("spark.sql.shuffle.partitions", "2")
->           .getOrCreate()
-             ^^^^^^^^^^^^^
-        )
-
-tests/unit/batch_layer/test_historical_pipeline.py:13: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <pyspark.sql.session.SparkSession.Builder object at 0x1227e74d0>
-
-    def getOrCreate(self) -> "SparkSession":
-        """Gets an existing :class:`SparkSession` or, if there is no existing one, creates a
-        new one based on the options set in this builder.
-    
-        .. versionadded:: 2.0.0
-    
-        .. versionchanged:: 3.4.0
-            Supports Spark Connect.
-    
-        Returns
-        -------
-        :class:`SparkSession`
-    
-        Examples
-        --------
-        This method first checks whether there is a valid global default SparkSession, and if
-        yes, return that one. If no valid global default SparkSession exists, the method
-        creates a new SparkSession and assigns the newly created SparkSession as the global
-        default.
-    
-        >>> s1 = SparkSession.builder.config("k1", "v1").getOrCreate()
-        >>> s1.conf.get("k1") == "v1"
-        True
-    
-        The configuration of the SparkSession can be changed afterwards
-    
-        >>> s1.conf.set("k1", "v1_new")
-        >>> s1.conf.get("k1") == "v1_new"
-        True
-    
-        In case an existing SparkSession is returned, the config options specified
-        in this builder will be applied to the existing SparkSession.
-    
-        >>> s2 = SparkSession.builder.config("k2", "v2").getOrCreate()
-        >>> s1.conf.get("k1") == s2.conf.get("k1") == "v1_new"
-        True
-        >>> s1.conf.get("k2") == s2.conf.get("k2") == "v2"
-        True
-        """
-        opts = dict(self._options)
-    
-        if is_remote_only():
-            from pyspark.sql.connect.session import SparkSession as RemoteSparkSession
-    
-            url = opts.get("spark.remote", os.environ.get("SPARK_REMOTE"))
-    
-            if url is None:
->               raise PySparkRuntimeError(
-                    errorClass="CONNECT_URL_NOT_SET",
-                    messageParameters={},
-                )
-E               pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
-
-.venv/lib/python3.13/site-packages/pyspark/sql/session.py:480: PySparkRuntimeError
-____________________ ERROR at setup of test_aggregate_data _____________________
-
-    @pytest.fixture(scope="module")
-    def spark():
-        spark = (
-            SparkSession.builder.master("local[1]")
-            .appName("HistoricalPipelineTests")
-            .config("spark.ui.enabled", "false")
-            .config("spark.sql.shuffle.partitions", "2")
->           .getOrCreate()
-             ^^^^^^^^^^^^^
-        )
-
-tests/unit/batch_layer/test_historical_pipeline.py:13: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = <pyspark.sql.session.SparkSession.Builder object at 0x1227e74d0>
-
-    def getOrCreate(self) -> "SparkSession":
-        """Gets an existing :class:`SparkSession` or, if there is no existing one, creates a
-        new one based on the options set in this builder.
-    
-        .. versionadded:: 2.0.0
-    
-        .. versionchanged:: 3.4.0
-            Supports Spark Connect.
-    
-        Returns
-        -------
-        :class:`SparkSession`
-    
-        Examples
-        --------
-        This method first checks whether there is a valid global default SparkSession, and if
-        yes, return that one. If no valid global default SparkSession exists, the method
-        creates a new SparkSession and assigns the newly created SparkSession as the global
-        default.
-    
-        >>> s1 = SparkSession.builder.config("k1", "v1").getOrCreate()
-        >>> s1.conf.get("k1") == "v1"
-        True
-    
-        The configuration of the SparkSession can be changed afterwards
-    
-        >>> s1.conf.set("k1", "v1_new")
-        >>> s1.conf.get("k1") == "v1_new"
-        True
-    
-        In case an existing SparkSession is returned, the config options specified
-        in this builder will be applied to the existing SparkSession.
-    
-        >>> s2 = SparkSession.builder.config("k2", "v2").getOrCreate()
-        >>> s1.conf.get("k1") == s2.conf.get("k1") == "v1_new"
-        True
-        >>> s1.conf.get("k2") == s2.conf.get("k2") == "v2"
-        True
-        """
-        opts = dict(self._options)
-    
-        if is_remote_only():
-            from pyspark.sql.connect.session import SparkSession as RemoteSparkSession
-    
-            url = opts.get("spark.remote", os.environ.get("SPARK_REMOTE"))
-    
-            if url is None:
->               raise PySparkRuntimeError(
-                    errorClass="CONNECT_URL_NOT_SET",
-                    messageParameters={},
-                )
-E               pyspark.errors.exceptions.base.PySparkRuntimeError: [CONNECT_URL_NOT_SET] Cannot create a Spark Connect session because the Spark Connect remote URL has not been set. Please define the remote URL by setting either the 'spark.remote' option or the 'SPARK_REMOTE' environment variable.
-
-.venv/lib/python3.13/site-packages/pyspark/sql/session.py:480: PySparkRuntimeError
 =============================== warnings summary ===============================
-tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns
-  /Users/zuzannasienko/Documents/masters/semestr2/PW/Big Data Analytics/big-data-analytics/.venv/lib/python3.13/site-packages/pyspark/sql/connect/utils.py:41: FutureWarning: PySpark does not yet fully support pandas >= 3.0.0. Some features may not work correctly. It is recommended to use pandas < 3.0.0 for now.
-    require_minimum_pandas_version()
-
 tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns
   /Users/zuzannasienko/Documents/masters/semestr2/PW/Big Data Analytics/big-data-analytics/.venv/lib/python3.13/site-packages/pyspark/testing/utils.py:127: FutureWarning: PySpark does not yet fully support pandas >= 3.0.0. Some features may not work correctly. It is recommended to use pandas < 3.0.0 for now.
     require_minimum_pandas_version()
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+_____________________ test_dag_file_imports_without_errors _____________________
+----------------------------- Captured stdout call -----------------------------
+import errors reported by Airflow: 0
+files with import errors: none
+____________________________ test_dag_is_registered ____________________________
+----------------------------- Captured stdout call -----------------------------
+registered DAGs: ['stream_to_minio']
+stream_to_minio registered: True
+__________________________ test_dag_runs_every_minute __________________________
+----------------------------- Captured stdout call -----------------------------
+schedule_interval of stream_to_minio: 60.0 s (expected 60.0)
+__________________________ test_required_topics_exist __________________________
+----------------------------- Captured stdout call -----------------------------
+topics on the broker: ['__consumer_offsets', 'preprocessed-transactions', 'raw-logins', 'raw-transactions']
+missing required topics: none
+______________________ test_topics_have_three_partitions _______________________
+----------------------------- Captured stdout call -----------------------------
+preprocessed-transactions: 3 partitions (expected 3)
+raw-logins: 3 partitions (expected 3)
+raw-transactions: 3 partitions (expected 3)
+_________________________ test_required_buckets_exist __________________________
+----------------------------- Captured stdout call -----------------------------
+buckets in MinIO: ['clean-logins-data', 'clean-transactions-data', 'historical-data', 'processed-data']
+missing buckets: none
+_____________________ test_historical_dataset_is_uploaded ______________________
+----------------------------- Captured stdout call -----------------------------
+object historical-data/paysim/historical_paysim.parquet exists
+size: 256520112 bytes (expected > 0)
+___________________ test_marked_batch_is_cleaned_and_stored ____________________
+----------------------------- Captured stdout call -----------------------------
+batch marker: C_SMOKE_aafb5faf
+messages published to raw-transactions: 10, undelivered: 0 (expected 0)
+waited 20 s for the cleaned parquet
+rows of the batch found in the cleaned parquet: 10 (expected 10)
+nulls in financial columns: {'amount': 0, 'oldbalanceOrg': 0, 'newbalanceOrig': 0}
+amount blanked in C_SMOKE_aafb5faf_0 was imputed as: 600.0 (expected 600.0)
+______________________ test_exact_duplicates_are_removed _______________________
+----------------------------- Captured stdout call -----------------------------
+input: 4 messages (C1 x3, C2 x1) -> output: 2 rows
+accounts kept: ['C1', 'C2']
+duplicated rows left: 0
+_ test_missing_amount_is_absolute_balance_difference[CASH_OUT-1000.0-400.0-600.0] _
+----------------------------- Captured stdout call -----------------------------
+CASH_OUT: old=1000.0, new=400.0, amount=null -> imputed amount=600.0 (expected 600.0)
+_ test_missing_amount_is_absolute_balance_difference[CASH_IN-400.0-1000.0-600.0] _
+----------------------------- Captured stdout call -----------------------------
+CASH_IN: old=400.0, new=1000.0, amount=null -> imputed amount=600.0 (expected 600.0)
+__ test_missing_amount_is_absolute_balance_difference[PAYMENT-50.0-50.0-0.0] ___
+----------------------------- Captured stdout call -----------------------------
+PAYMENT: old=50.0, new=50.0, amount=null -> imputed amount=0.0 (expected 0.0)
+______ test_missing_old_balance_for_outflow_is_new_plus_amount[CASH_OUT] _______
+----------------------------- Captured stdout call -----------------------------
+CASH_OUT: new=400.0, amount=600.0, old=null -> imputed oldbalanceOrg=1000.0 (expected 1000.0)
+_______ test_missing_old_balance_for_outflow_is_new_plus_amount[PAYMENT] _______
+----------------------------- Captured stdout call -----------------------------
+PAYMENT: new=400.0, amount=600.0, old=null -> imputed oldbalanceOrg=1000.0 (expected 1000.0)
+______ test_missing_old_balance_for_outflow_is_new_plus_amount[TRANSFER] _______
+----------------------------- Captured stdout call -----------------------------
+TRANSFER: new=400.0, amount=600.0, old=null -> imputed oldbalanceOrg=1000.0 (expected 1000.0)
+___________ test_missing_old_balance_for_cash_in_is_new_minus_amount ___________
+----------------------------- Captured stdout call -----------------------------
+CASH_IN: new=1000.0, amount=600.0, old=null -> imputed oldbalanceOrg=400.0 (expected 400.0)
+______ test_missing_new_balance_for_outflow_is_old_minus_amount[CASH_OUT] ______
+----------------------------- Captured stdout call -----------------------------
+CASH_OUT: old=1000.0, amount=600.0, new=null -> imputed newbalanceOrig=400.0 (expected 400.0)
+______ test_missing_new_balance_for_outflow_is_old_minus_amount[PAYMENT] _______
+----------------------------- Captured stdout call -----------------------------
+PAYMENT: old=1000.0, amount=600.0, new=null -> imputed newbalanceOrig=400.0 (expected 400.0)
+______ test_missing_new_balance_for_outflow_is_old_minus_amount[TRANSFER] ______
+----------------------------- Captured stdout call -----------------------------
+TRANSFER: old=1000.0, amount=600.0, new=null -> imputed newbalanceOrig=400.0 (expected 400.0)
+___________ test_missing_new_balance_for_cash_in_is_old_plus_amount ____________
+----------------------------- Captured stdout call -----------------------------
+CASH_IN: old=400.0, amount=600.0, new=null -> imputed newbalanceOrig=1000.0 (expected 1000.0)
+__________________ test_complete_rows_pass_through_unchanged ___________________
+----------------------------- Captured stdout call -----------------------------
+input: 2 complete rows -> output: 2 rows
+types in output order: ['CASH_OUT', 'CASH_IN'] (input: ['CASH_OUT', 'CASH_IN'])
+amounts in output order: [600.0, 10.0] (input: [600.0, 10.0])
+___________________ test_login_events_are_only_deduplicated ____________________
+----------------------------- Captured stdout call -----------------------------
+input: 2 identical login events -> output: 1 row
+columns unchanged: True
+row equals input event: True
+________ test_no_residual_nulls_in_financial_columns_after_single_fault ________
+----------------------------- Captured stdout call -----------------------------
+input: 12 messages with one blanked financial field each
+output rows: 12 (expected 12)
+nulls left per column: {'amount': 0, 'oldbalanceOrg': 0, 'newbalanceOrig': 0}
+_________________ test_imputed_rows_satisfy_balance_arithmetic _________________
+----------------------------- Captured stdout call -----------------------------
+rows checked: 6
+residual (old + sign*amount - new) per row: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+max |residual|: 0.0 (expected 0.0)
+________ test_batch_with_fully_null_financial_column_is_cleaned[amount] ________
+----------------------------- Captured stdout call -----------------------------
+amount null in both messages -> output rows: 2 (expected 2)
+amount after cleaning: [600.0, 600.0]
+____ test_batch_with_fully_null_financial_column_is_cleaned[oldbalanceOrg] _____
+----------------------------- Captured stdout call -----------------------------
+oldbalanceOrg null in both messages -> output rows: 2 (expected 2)
+oldbalanceOrg after cleaning: [1000.0, 1000.0]
+____ test_batch_with_fully_null_financial_column_is_cleaned[newbalanceOrig] ____
+----------------------------- Captured stdout call -----------------------------
+newbalanceOrig null in both messages -> output rows: 2 (expected 2)
+newbalanceOrig after cleaning: [400.0, 400.0]
+______________________ test_validate_data_missing_columns ______________________
+---------------------------- Captured stderr setup -----------------------------
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+26/11/25 20:19:13 WARN Utils: Your hostname, Zuzannas-MacBook-Air.local, resolves to a loopback address: 127.0.0.1; using 192.168.0.102 instead (on interface en0)
+26/11/25 20:19:13 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/11/25 20:19:14 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+----------------------------- Captured stdout call -----------------------------
+column 'amount' dropped -> raised ValueError: Missing columns: ['amount']
+____________________________ test_engineer_features ____________________________
+----------------------------- Captured stdout call -----------------------------
+C1 amount_log: 4.61512 (expected 4.61512)
+C1 hour_of_day: 0 (expected 0), day: 1 (expected 1)
+C1 orig_balance_diff: 100.0 (expected 100.0)
+C1 dest_balance_diff: 100.0 (expected 100.0)
+C1 amount_to_balance_ratio: 0.2 (expected 0.2)
+----------------------------- Captured stderr call -----------------------------
+[Stage 0:>                                                          (0 + 1) / 1]                                                                                
+_____________________ test_engineer_features_zero_balance ______________________
+----------------------------- Captured stdout call -----------------------------
+oldbalanceOrg set to 0 -> amount_to_balance_ratio per row: [None, None, None] (expected all None)
+_____________________________ test_aggregate_data ______________________________
+----------------------------- Captured stdout call -----------------------------
+step 1: transaction_count=2 (expected 2), total_amount=150.0 (expected 150.0), avg_amount=75.0 (expected 75.0)
+TRANSFER: transaction_count=2 (expected 2), total_amount=300.0 (expected 300.0), avg_amount=150.0 (expected 150.0)
+___________ TestPreparePaysim.test_split_is_exhaustive_and_disjoint ____________
+----------------------------- Captured stdout call -----------------------------
+input rows: 12, batch rows: 4, stream rows: 8
+batch steps: 1..500 (expected <= 500)
+stream steps: 501..743 (expected > 500)
+shared row indices: 0 (expected 0)
+__________ TestPreparePaysim.test_split_step_itself_belongs_to_batch ___________
+----------------------------- Captured stdout call -----------------------------
+step 500 in batch: True (expected True)
+step 500 in stream: False (expected False)
+____________ TestPreparePaysim.test_event_time_is_derived_from_step ____________
+----------------------------- Captured stdout call -----------------------------
+batch: event_time == (step - 1) * 3600 in 4/4 rows
+batch: second_offset values: [np.int64(0)] (expected [0])
+stream: event_time == (step - 1) * 3600 in 8/8 rows
+stream: second_offset values: [np.int64(0)] (expected [0])
+event_time of step 1: 0 (expected 0)
+______________ TestPreparePaysim.test_input_frame_is_not_mutated _______________
+----------------------------- Captured stdout call -----------------------------
+columns before: ['step', 'type', 'amount', 'nameOrig', 'oldbalanceOrg', 'newbalanceOrig', 'nameDest', 'oldbalanceDest', 'newbalanceDest', 'isFraud', 'isFlaggedFraud']
+columns after:  ['step', 'type', 'amount', 'nameOrig', 'oldbalanceOrg', 'newbalanceOrig', 'nameDest', 'oldbalanceDest', 'newbalanceDest', 'isFraud', 'isFlaggedFraud']
+frame equals its copy: True (expected True)
+______________ TestPreparePaysim.test_split_step_boundaries[0-0] _______________
+----------------------------- Captured stdout call -----------------------------
+split_step=0: batch rows=0 (expected 0), stream rows=12 (expected 12)
+_____________ TestPreparePaysim.test_split_step_boundaries[499-3] ______________
+----------------------------- Captured stdout call -----------------------------
+split_step=499: batch rows=3 (expected 3), stream rows=9 (expected 9)
+_____________ TestPreparePaysim.test_split_step_boundaries[743-12] _____________
+----------------------------- Captured stdout call -----------------------------
+split_step=743: batch rows=12 (expected 12), stream rows=0 (expected 0)
+___________ TestSelectAccounts.test_first_step_and_count_per_account ___________
+----------------------------- Captured stdout call -----------------------------
+columns: ['first_transaction_step', 'transaction_count']
+C_B: first step 503, 2 transactions (expected 503, 2)
+C_D: first step 520, 2 transactions (expected 520, 2)
+accounts: 6 (distinct nameOrig in stream: 6)
+____ TestSelectAccounts.test_subsample_returns_requested_number_of_accounts ____
+----------------------------- Captured stdout call -----------------------------
+requested 3 accounts, got 3: ['C_A', 'C_B', 'C_F']
+all are senders in the stream: True
+__ TestSampleDeviceProfiles.test_each_account_gets_one_complete_known_profile __
+----------------------------- Captured stdout call -----------------------------
+accounts: 6, profiles assigned: 6
+nulls in device columns: 0 (expected 0)
+profiles assigned: [('desktop', 'Windows 10', 'chrome 63.0', 'Windows', '1920x1080'), ('mobile', 'Android 7.0', 'chrome 63.0 for android', 'SM-G930V', '1920x1080'), ('mobile', 'iOS 11.1.2', 'mobile safari 11.0', 'iOS Device', '2208x1242')]
+______ TestSampleDeviceProfiles.test_device_ids_are_unique_and_sequential ______
+----------------------------- Captured stdout call -----------------------------
+device_id: ['D000001', 'D000002', 'D000003', 'D000004', 'D000005', 'D000006']
+_ TestSampleDeviceProfiles.test_device_type_shares_follow_reference_distribution _
+----------------------------- Captured stdout call -----------------------------
+desktop share: 0.600 (expected 0.60 +/- 0.03)
+mobile share: 0.400 (expected 0.40 +/- 0.03)
+_____ TestSampleDeviceProfiles.test_raises_when_no_complete_profile_exists _____
+----------------------------- Captured stdout call -----------------------------
+raised ValueError: No complete IEEE-CIS device profiles available
+______ TestAssignLoginScenarios.test_values_come_from_documented_domains _______
+----------------------------- Captured stdout call -----------------------------
+accounts: 100, output rows: 100
+activity patterns: ['MIXED_ACTIVITY', 'SHORT_ACTIVITY']
+login scenarios: ['MULTIPLE_FAILURES', 'MULTIPLE_LOGINS', 'NORMAL_LOGIN', 'SINGLE_FAILURE']
+login_scenario added to the input frame: False (expected False)
+__________ TestAssignLoginScenarios.test_shares_match_documented_mix ___________
+----------------------------- Captured stdout call -----------------------------
+SHORT_ACTIVITY: 0.702 (expected 0.70 +/- 0.015)
+NORMAL_LOGIN: 0.651 (expected 0.65 +/- 0.015)
+SINGLE_FAILURE: 0.201 (expected 0.20 +/- 0.015)
+MULTIPLE_FAILURES: 0.047 (expected 0.05 +/- 0.015)
+MULTIPLE_LOGINS: 0.100 (expected 0.10 +/- 0.015)
+__________________ TestGenerateLoginEvents.test_output_schema __________________
+----------------------------- Captured stdout call -----------------------------
+columns: ['event_id', 'account_id', 'device_id', 'event_type', 'step', 'second_offset', 'event_time', 'device_type', 'operating_system', 'browser', 'device_info', 'screen_resolution']
+event_id: ['E0000001', 'E0000002', 'E0000003', 'E0000004', 'E0000005', 'E0000006', 'E0000007', 'E0000008', 'E0000009', 'E0000010', 'E0000011']
+_ TestGenerateLoginEvents.test_accounts_starting_at_or_before_split_plus_one_are_skipped _
+----------------------------- Captured stdout call -----------------------------
+events for C_SKIP_501: 0 (expected 0)
+events for C_EDGE_502: 2 (expected > 0)
+______ TestGenerateLoginEvents.test_event_sequence_matches_login_scenario ______
+----------------------------- Captured stdout call -----------------------------
+C_NORMAL_LOGIN (NORMAL_LOGIN): ['LOGIN_SUCCESS'] (expected ['LOGIN_SUCCESS'])
+C_SINGLE_FAILURE (SINGLE_FAILURE): ['LOGIN_FAILED', 'LOGIN_SUCCESS'] (expected ['LOGIN_FAILED', 'LOGIN_SUCCESS'])
+C_MULTIPLE_FAILURES (MULTIPLE_FAILURES): ['LOGIN_FAILED', 'LOGIN_FAILED', 'LOGIN_FAILED', 'LOGIN_SUCCESS'] (expected ['LOGIN_FAILED', 'LOGIN_FAILED', 'LOGIN_FAILED', 'LOGIN_SUCCESS'])
+C_MULTIPLE_LOGINS (MULTIPLE_LOGINS): ['LOGIN_SUCCESS', 'LOGIN_SUCCESS'] (expected ['LOGIN_SUCCESS', 'LOGIN_SUCCESS'])
+C_EDGE_502 (MULTIPLE_LOGINS): ['LOGIN_SUCCESS', 'LOGIN_SUCCESS'] (expected ['LOGIN_SUCCESS', 'LOGIN_SUCCESS'])
+_ TestGenerateLoginEvents.test_events_lie_between_split_and_first_transaction __
+----------------------------- Captured stdout call -----------------------------
+events: 11
+earliest event_time: 1800099 (lower bound 1800000)
+min gap to first transaction: 56 s (expected > 0)
+____ TestGenerateLoginEvents.test_short_activity_events_fall_in_near_window ____
+----------------------------- Captured stdout call -----------------------------
+SHORT_ACTIVITY events: 9
+max distance to first transaction: 17174 s (limit 21600 s)
+___ TestGenerateLoginEvents.test_gaps_between_events_respect_scenario_limits ___
+----------------------------- Captured stdout call -----------------------------
+C_NORMAL_LOGIN: gaps between events = [] s
+C_SINGLE_FAILURE: gaps between events = [93.0] s
+C_MULTIPLE_FAILURES: gaps between events = [43.0, 8.0, 21.0] s
+C_MULTIPLE_LOGINS: gaps between events = [467.0] s
+_ TestGenerateLoginEvents.test_step_and_second_offset_are_consistent_with_event_time _
+----------------------------- Captured stdout call -----------------------------
+step == event_time // 3600 + 1 in 11/11 events
+second_offset == event_time % 3600 in 11/11 events
+______ TestGenerateLoginEvents.test_device_profile_is_copied_and_renamed _______
+----------------------------- Captured stdout call -----------------------------
+events checked: 11, mismatching device fields: 0 (expected 0)
+_________ TestGenerateLoginEvents.test_output_is_sorted_by_event_time __________
+----------------------------- Captured stdout call -----------------------------
+event_time over 11 rows: [1800099, 1803544, 1851226, 1851693, 1852190, 1852283, 1853065, 1853108, 1853116, 1853137, 1862595]
+___ TestGenerateLoginEvents.test_account_with_one_hour_window_uses_that_hour ___
+----------------------------- Captured stdout call -----------------------------
+C_EDGE_502 event times: [1800099, 1803544] (window [1800000, 1803600))
+__________________ test_save_data_writes_three_parquet_files ___________________
+----------------------------- Captured stdout call -----------------------------
+paysim_batch.parquet: exists=True, rows read back=4 (written 4)
+paysim_stream.parquet: exists=True, rows read back=8 (written 8)
+login_events.parquet: exists=True, rows read back=11 (written 11)
+_____________ test_generation_is_deterministic_under_project_seed ______________
+----------------------------- Captured stdout call -----------------------------
+run 1: 5 events, run 2: 5 events
+frames identical: True (expected True)
+__________________ test_check_data_path_accepts_only_parquet ___________________
+----------------------------- Captured stdout call -----------------------------
+x.parquet accepted, returned suffix: .parquet
+x.csv rejected with ValueError: File /private/var/folders/yw/76ycqk7n42q8yk6qqfnvpz0h0000gn/T/pytest-of-zuzannasienko/pytest-4/test_check_data_path_accepts_o0/x.csv is not a Parquet file
+__________________ test_take_next_stream_filters_current_step __________________
+----------------------------- Captured stdout call -----------------------------
+input rows: 5 (steps [np.int64(501), np.int64(502)]), current step: 502
+selected rows: 2 (expected 2), their steps: [np.int64(502)]
+_________ test_data_corruption_conserves_rows_and_stores_delayed_ones __________
+----------------------------- Captured stdout call -----------------------------
+input rows: 20000, delayed: 209, duplicates: 105
+emitted rows: 19896 (expected 20000 - 209 + 105 = 19896)
+___________________ test_fault_rates_match_documented_values ___________________
+----------------------------- Captured stdout call -----------------------------
+transactions: 20000
+blanked: 407 = 2.04% (expected 2% +/- 0.5 pp)
+duplicated: 100 = 0.50% (expected 0.5% +/- 0.2 pp)
+delayed: 209 = 1.04% (expected 1% +/- 0.3 pp)
+max blanked fields in one row: 1 (expected <= 1)
+______________ test_produce_replays_every_row_once_in_step_order _______________
+----------------------------- Captured stdout call -----------------------------
+transactions sent: 5 (expected 5), logins sent: 1 (expected 1)
+steps in send order: [501, 501, 501, 502, 502]
+accounts in send order: ['C0', 'C1', 'C2', 'C3', 'C4']
+current_step after replay: 503 (expected 503)
+_____________ test_delayed_row_is_re_emitted_in_the_following_step _____________
+----------------------------- Captured stdout call -----------------------------
+transactions sent: 5 (expected 5)
+steps in send order: [501, 501, 502, 502, 501] (expected [501, 501, 502, 502, 501])
+accounts in send order: ['C1', 'C2', 'C3', 'C4', 'C0'] (last expected C0)
 test documentation written to docs/tests/test_cases.md
 test documentation written to docs/tests/test_cases.tex
 test documentation written to docs/tests/test_cases_summary.tex
 - Generated html report: file:///Users/zuzannasienko/Documents/masters/semestr2/PW/Big%20Data%20Analytics/big-data-analytics/docs/tests/evidence/pytest_report.html -
 =========================== short test summary info ============================
-ERROR tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns
-ERROR tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features
-ERROR tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features_zero_balance
-ERROR tests/unit/batch_layer/test_historical_pipeline.py::test_aggregate_data
-================== 60 passed, 2 warnings, 4 errors in 49.35s ===================
+PASSED tests/integration/test_airflow_dag.py::test_dag_file_imports_without_errors
+PASSED tests/integration/test_airflow_dag.py::test_dag_is_registered
+PASSED tests/integration/test_airflow_dag.py::test_dag_runs_every_minute
+PASSED tests/integration/test_kafka_topics.py::test_required_topics_exist
+PASSED tests/integration/test_kafka_topics.py::test_topics_have_three_partitions
+PASSED tests/integration/test_minio_setup.py::test_required_buckets_exist
+PASSED tests/integration/test_minio_setup.py::test_historical_dataset_is_uploaded
+PASSED tests/integration/test_stream_to_minio.py::test_marked_batch_is_cleaned_and_stored
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_exact_duplicates_are_removed
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_amount_is_absolute_balance_difference[CASH_OUT-1000.0-400.0-600.0]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_amount_is_absolute_balance_difference[CASH_IN-400.0-1000.0-600.0]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_amount_is_absolute_balance_difference[PAYMENT-50.0-50.0-0.0]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_old_balance_for_outflow_is_new_plus_amount[CASH_OUT]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_old_balance_for_outflow_is_new_plus_amount[PAYMENT]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_old_balance_for_outflow_is_new_plus_amount[TRANSFER]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_old_balance_for_cash_in_is_new_minus_amount
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_new_balance_for_outflow_is_old_minus_amount[CASH_OUT]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_new_balance_for_outflow_is_old_minus_amount[PAYMENT]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_new_balance_for_outflow_is_old_minus_amount[TRANSFER]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_missing_new_balance_for_cash_in_is_old_plus_amount
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_complete_rows_pass_through_unchanged
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_login_events_are_only_deduplicated
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_no_residual_nulls_in_financial_columns_after_single_fault
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_imputed_rows_satisfy_balance_arithmetic
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_batch_with_fully_null_financial_column_is_cleaned[amount]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_batch_with_fully_null_financial_column_is_cleaned[oldbalanceOrg]
+PASSED tests/unit/batch_layer/test_clean_stream_data.py::test_batch_with_fully_null_financial_column_is_cleaned[newbalanceOrig]
+PASSED tests/unit/batch_layer/test_historical_pipeline.py::test_validate_data_missing_columns
+PASSED tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features
+PASSED tests/unit/batch_layer/test_historical_pipeline.py::test_engineer_features_zero_balance
+PASSED tests/unit/batch_layer/test_historical_pipeline.py::test_aggregate_data
+PASSED tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_is_exhaustive_and_disjoint
+PASSED tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_step_itself_belongs_to_batch
+PASSED tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_event_time_is_derived_from_step
+PASSED tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_input_frame_is_not_mutated
+PASSED tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_step_boundaries[0-0]
+PASSED tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_step_boundaries[499-3]
+PASSED tests/unit/generator/test_prepare_data.py::TestPreparePaysim::test_split_step_boundaries[743-12]
+PASSED tests/unit/generator/test_prepare_data.py::TestSelectAccounts::test_first_step_and_count_per_account
+PASSED tests/unit/generator/test_prepare_data.py::TestSelectAccounts::test_subsample_returns_requested_number_of_accounts
+PASSED tests/unit/generator/test_prepare_data.py::TestSampleDeviceProfiles::test_each_account_gets_one_complete_known_profile
+PASSED tests/unit/generator/test_prepare_data.py::TestSampleDeviceProfiles::test_device_ids_are_unique_and_sequential
+PASSED tests/unit/generator/test_prepare_data.py::TestSampleDeviceProfiles::test_device_type_shares_follow_reference_distribution
+PASSED tests/unit/generator/test_prepare_data.py::TestSampleDeviceProfiles::test_raises_when_no_complete_profile_exists
+PASSED tests/unit/generator/test_prepare_data.py::TestAssignLoginScenarios::test_values_come_from_documented_domains
+PASSED tests/unit/generator/test_prepare_data.py::TestAssignLoginScenarios::test_shares_match_documented_mix
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_output_schema
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_accounts_starting_at_or_before_split_plus_one_are_skipped
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_event_sequence_matches_login_scenario
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_events_lie_between_split_and_first_transaction
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_short_activity_events_fall_in_near_window
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_gaps_between_events_respect_scenario_limits
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_step_and_second_offset_are_consistent_with_event_time
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_device_profile_is_copied_and_renamed
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_output_is_sorted_by_event_time
+PASSED tests/unit/generator/test_prepare_data.py::TestGenerateLoginEvents::test_account_with_one_hour_window_uses_that_hour
+PASSED tests/unit/generator/test_prepare_data.py::test_save_data_writes_three_parquet_files
+PASSED tests/unit/generator/test_prepare_data.py::test_generation_is_deterministic_under_project_seed
+PASSED tests/unit/generator/test_stream_generator.py::test_check_data_path_accepts_only_parquet
+PASSED tests/unit/generator/test_stream_generator.py::test_take_next_stream_filters_current_step
+PASSED tests/unit/generator/test_stream_generator.py::test_data_corruption_conserves_rows_and_stores_delayed_ones
+PASSED tests/unit/generator/test_stream_generator.py::test_fault_rates_match_documented_values
+PASSED tests/unit/generator/test_stream_generator.py::test_produce_replays_every_row_once_in_step_order
+PASSED tests/unit/generator/test_stream_generator.py::test_delayed_row_is_re_emitted_in_the_following_step
+======================== 64 passed, 1 warning in 42.78s ========================

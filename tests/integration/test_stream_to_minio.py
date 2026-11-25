@@ -60,7 +60,7 @@ def newest_objects(s3, since: datetime) -> list[dict]:
 
 def test_marked_batch_is_cleaned_and_stored(kafka_admin, s3, airflow):
     """Verify the stream path Kafka -> Airflow DAG -> cleaning -> MinIO end to end.
-    
+
     Steps:
     1. Publish 10 uniquely marked transactions to raw-transactions, one of them with
         amount = null.
@@ -81,7 +81,12 @@ def test_marked_batch_is_cleaned_and_stored(kafka_admin, s3, airflow):
         producer.produce(
             TRANSACTION_TOPIC, value=json.dumps(transaction(marker, index, amount))
         )
-    assert producer.flush(10) == 0, "not all messages were delivered to Kafka"
+    undelivered = producer.flush(10)
+    print(f"batch marker: {marker}")
+    print(
+        f"messages published to {TRANSACTION_TOPIC}: 10, undelivered: {undelivered} (expected 0)"
+    )
+    assert undelivered == 0, "not all messages were delivered to Kafka"
 
     airflow("dags", "unpause", DAG_ID)
     airflow("dags", "trigger", DAG_ID)
@@ -100,9 +105,17 @@ def test_marked_batch_is_cleaned_and_stored(kafka_admin, s3, airflow):
             break
         time.sleep(POLL_SECONDS)
 
+    print(
+        f"waited {time.monotonic() - deadline + WAIT_SECONDS:.0f} s for the cleaned parquet"
+    )
     assert rows is not None, (
         f"no cleaned parquet with the {marker} batch within {WAIT_SECONDS}s"
     )
-    assert rows[FINANCIAL_COLUMNS].isna().sum().sum() == 0
+    print(f"rows of the batch found in the cleaned parquet: {len(rows)} (expected 10)")
+    print(
+        f"nulls in financial columns: {rows[FINANCIAL_COLUMNS].isna().sum().to_dict()}"
+    )
     imputed = rows.loc[rows["nameOrig"] == f"{marker}_0", "amount"].iloc[0]
+    print(f"amount blanked in {marker}_0 was imputed as: {imputed} (expected 600.0)")
+    assert rows[FINANCIAL_COLUMNS].isna().sum().sum() == 0
     assert imputed == pytest.approx(600.0)

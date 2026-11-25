@@ -7,7 +7,9 @@ Puts the project on ``sys.path`` the same way the code is run in the repository
 Also hosts a small plugin that generates the tabular test-case documentation:
 ``pytest tests --test-doc PREFIX`` writes ``PREFIX.md``, ``PREFIX.tex`` (a booktabs
 ``longtable`` to ``\\input``) and ``PREFIX_summary.tex`` (counts per level and type)
-from the test docstrings and the outcomes of that run. Expected docstring format::
+from the test docstrings and the outcomes of that run. Whatever a test ``print``s is
+captured and listed in the "Actual result" column below the verdict, so the table shows
+the observed values and not just "passed". Expected docstring format::
 
     One-line objective.
 
@@ -48,13 +50,13 @@ ITEM = re.compile(r"^(?:\d+[.)]|[-*\u2022])\s+(.*)$")
 COLUMNS = (
     # header, share of the table width
     ("ID", 0.05),
-    ("Module", 0.10),
-    ("Level", 0.08),
-    ("Type", 0.08),
-    ("Objective", 0.16),
-    ("Steps", 0.21),
-    ("Expected result", 0.20),
-    ("Actual result", 0.12),
+    ("Module", 0.08),
+    ("Level", 0.07),
+    ("Type", 0.07),
+    ("Objective", 0.14),
+    ("Steps", 0.17),
+    ("Expected result", 0.17),
+    ("Actual result", 0.25),
 )
 LATEX_CHARS = {
     "\\": r"\textbackslash{}",
@@ -207,6 +209,7 @@ class DocPlugin:
         self.prefix = Path(prefix)
         self.cases: dict[str, DocCase] = {}
         self.results: dict[str, tuple[str, str]] = {}
+        self.printed: dict[str, list[str]] = {}
         self.collection_errors: list[str] = []
 
     # -- collection ----------------------------------------------------------------
@@ -248,6 +251,10 @@ class DocPlugin:
     # -- outcomes ------------------------------------------------------------------
 
     def pytest_runtest_logreport(self, report):
+        if report.when == "call":
+            self.printed[report.nodeid] = [
+                line.strip() for line in report.capstdout.splitlines() if line.strip()
+            ]
         result = classify(report)
         if result is None:
             return
@@ -258,6 +265,15 @@ class DocPlugin:
 
     def case_results(self, case: DocCase) -> list[tuple[str, str]]:
         return [self.results.get(nodeid, ("not run", "")) for nodeid in case.case_ids]
+
+    def observed(self, case: DocCase) -> list[str]:
+        """Lines printed by the test; labelled with the case id when parametrised."""
+        lines: list[str] = []
+        for nodeid in case.case_ids:
+            label = nodeid[nodeid.index("[") :] if "[" in nodeid else ""
+            prefix = f"{label} " if label and len(case.case_ids) > 1 else ""
+            lines += [f"{prefix}{line}" for line in self.printed.get(nodeid, [])]
+        return lines
 
     # -- output --------------------------------------------------------------------
 
@@ -296,7 +312,7 @@ class DocPlugin:
                 [case.objective],
                 numbered(case.steps, ordered=True),
                 numbered(case.expected, ordered=False),
-                [actual_result(self.case_results(case))],
+                [actual_result(self.case_results(case)), *self.observed(case)],
             )
 
     def summary(self) -> list[tuple[str, str, int, Counter]]:

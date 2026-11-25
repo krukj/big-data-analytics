@@ -79,7 +79,7 @@ def clean_one(cleaner, faulty_row):
 
 def test_exact_duplicates_are_removed(cleaner):
     """Verify identical stream messages collapse to one row.
-    
+
     Steps:
     1. Build a batch with one message three times and a different one once.
     2. Call StreamConsumer.data_cleaning.
@@ -90,6 +90,9 @@ def test_exact_duplicates_are_removed(cleaner):
     first = message(orig="C1")
     second = message(orig="C2", amount=5.0, old=5.0, new=0.0)
     out = clean(cleaner, [first, first, second, first])
+    print(f"input: 4 messages (C1 x3, C2 x1) -> output: {len(out)} rows")
+    print(f"accounts kept: {sorted(out['nameOrig'])}")
+    print(f"duplicated rows left: {out.duplicated().sum()}")
 
     assert len(out) == 2
     assert out.duplicated().sum() == 0
@@ -108,7 +111,7 @@ def test_missing_amount_is_absolute_balance_difference(
     cleaner, typ, old, new, expected_amount
 ):
     """Verify a missing amount is imputed from the sender's balances.
-    
+
     Steps:
     1. Build a message with amount = null (CASH_OUT, CASH_IN, PAYMENT cases).
     2. Clean it in a batch that also holds a complete reference row.
@@ -116,13 +119,17 @@ def test_missing_amount_is_absolute_balance_difference(
     - amount equals |oldbalanceOrg - newbalanceOrig| (600, 600 and 0).
     """
     row = clean_one(cleaner, message(typ=typ, amount=None, old=old, new=new))
+    print(
+        f"{typ}: old={old}, new={new}, amount=null -> imputed amount={row['amount']} "
+        f"(expected {expected_amount})"
+    )
     assert row["amount"] == pytest.approx(expected_amount)
 
 
 @pytest.mark.parametrize("typ", OUTFLOW_TYPES)
 def test_missing_old_balance_for_outflow_is_new_plus_amount(cleaner, typ):
     """Verify a missing old balance of an outflow transaction is imputed.
-    
+
     Steps:
     1. Build a CASH_OUT, PAYMENT or TRANSFER message (one case each) with oldbalanceOrg
         = null.
@@ -131,12 +138,16 @@ def test_missing_old_balance_for_outflow_is_new_plus_amount(cleaner, typ):
     - oldbalanceOrg equals newbalanceOrig + amount (400 + 600 = 1000).
     """
     row = clean_one(cleaner, message(typ=typ, amount=600.0, old=None, new=400.0))
+    print(
+        f"{typ}: new=400.0, amount=600.0, old=null -> imputed "
+        f"oldbalanceOrg={row['oldbalanceOrg']} (expected 1000.0)"
+    )
     assert row["oldbalanceOrg"] == pytest.approx(1000.0)
 
 
 def test_missing_old_balance_for_cash_in_is_new_minus_amount(cleaner):
     """Verify a missing old balance of a CASH_IN transaction is imputed.
-    
+
     Steps:
     1. Build a CASH_IN message with oldbalanceOrg = null.
     2. Clean it in a batch that also holds a complete reference row.
@@ -144,13 +155,17 @@ def test_missing_old_balance_for_cash_in_is_new_minus_amount(cleaner):
     - oldbalanceOrg equals newbalanceOrig - amount (1000 - 600 = 400).
     """
     row = clean_one(cleaner, message(typ="CASH_IN", amount=600.0, old=None, new=1000.0))
+    print(
+        f"CASH_IN: new=1000.0, amount=600.0, old=null -> imputed "
+        f"oldbalanceOrg={row['oldbalanceOrg']} (expected 400.0)"
+    )
     assert row["oldbalanceOrg"] == pytest.approx(400.0)
 
 
 @pytest.mark.parametrize("typ", OUTFLOW_TYPES)
 def test_missing_new_balance_for_outflow_is_old_minus_amount(cleaner, typ):
     """Verify a missing new balance of an outflow transaction is imputed.
-    
+
     Steps:
     1. Build a CASH_OUT, PAYMENT or TRANSFER message (one case each) with newbalanceOrig
         = null.
@@ -159,12 +174,16 @@ def test_missing_new_balance_for_outflow_is_old_minus_amount(cleaner, typ):
     - newbalanceOrig equals oldbalanceOrg - amount (1000 - 600 = 400).
     """
     row = clean_one(cleaner, message(typ=typ, amount=600.0, old=1000.0, new=None))
+    print(
+        f"{typ}: old=1000.0, amount=600.0, new=null -> imputed "
+        f"newbalanceOrig={row['newbalanceOrig']} (expected 400.0)"
+    )
     assert row["newbalanceOrig"] == pytest.approx(400.0)
 
 
 def test_missing_new_balance_for_cash_in_is_old_plus_amount(cleaner):
     """Verify a missing new balance of a CASH_IN transaction is imputed.
-    
+
     Steps:
     1. Build a CASH_IN message with newbalanceOrig = null.
     2. Clean it in a batch that also holds a complete reference row.
@@ -172,12 +191,16 @@ def test_missing_new_balance_for_cash_in_is_old_plus_amount(cleaner):
     - newbalanceOrig equals oldbalanceOrg + amount (400 + 600 = 1000).
     """
     row = clean_one(cleaner, message(typ="CASH_IN", amount=600.0, old=400.0, new=None))
+    print(
+        f"CASH_IN: old=400.0, amount=600.0, new=null -> imputed "
+        f"newbalanceOrig={row['newbalanceOrig']} (expected 1000.0)"
+    )
     assert row["newbalanceOrig"] == pytest.approx(1000.0)
 
 
 def test_complete_rows_pass_through_unchanged(cleaner):
     """Verify complete messages pass through cleaning unchanged.
-    
+
     Steps:
     1. Build two complete messages (CASH_OUT and CASH_IN).
     2. Call data_cleaning.
@@ -189,12 +212,19 @@ def test_complete_rows_pass_through_unchanged(cleaner):
         message(typ="CASH_IN", amount=10.0, old=0.0, new=10.0, orig="C2"),
     ]
     out = clean(cleaner, rows)
+    print(f"input: {len(rows)} complete rows -> output: {len(out)} rows")
+    print(
+        f"types in output order: {list(out['type'])} (input: {[r['type'] for r in rows]})"
+    )
+    print(
+        f"amounts in output order: {list(out['amount'])} (input: {[r['amount'] for r in rows]})"
+    )
     pd.testing.assert_frame_equal(out, pd.DataFrame(rows), check_dtype=False)
 
 
 def test_login_events_are_only_deduplicated(cleaner):
     """Verify login events are de-duplicated and otherwise left untouched.
-    
+
     Steps:
     1. Build a batch with the same login event twice.
     2. Call data_cleaning.
@@ -217,6 +247,9 @@ def test_login_events_are_only_deduplicated(cleaner):
         "screen_resolution": "2208x1242",
     }
     out = clean(cleaner, [login, login])
+    print(f"input: 2 identical login events -> output: {len(out)} row")
+    print(f"columns unchanged: {list(out.columns) == list(login.keys())}")
+    print(f"row equals input event: {out.iloc[0].to_dict() == login}")
 
     assert len(out) == 1
     assert list(out.columns) == list(login.keys())
@@ -225,7 +258,7 @@ def test_login_events_are_only_deduplicated(cleaner):
 
 def test_no_residual_nulls_in_financial_columns_after_single_fault(cleaner):
     """Verify no null remains in financial columns after single-field faults.
-    
+
     Steps:
     1. Build 12 messages: amount, oldbalanceOrg and newbalanceOrig blanked once per type
         (CASH_OUT, PAYMENT, TRANSFER, CASH_IN).
@@ -240,6 +273,9 @@ def test_no_residual_nulls_in_financial_columns_after_single_fault(cleaner):
         for typ in OUTFLOW_TYPES + ["CASH_IN"]
     ]
     out = clean(cleaner, rows)
+    print(f"input: {len(rows)} messages with one blanked financial field each")
+    print(f"output rows: {len(out)} (expected {len(rows)})")
+    print(f"nulls left per column: {out[FINANCIAL_COLUMNS].isna().sum().to_dict()}")
 
     assert len(out) == len(rows)
     assert out[FINANCIAL_COLUMNS].isna().sum().sum() == 0
@@ -247,7 +283,7 @@ def test_no_residual_nulls_in_financial_columns_after_single_fault(cleaner):
 
 def test_imputed_rows_satisfy_balance_arithmetic(cleaner):
     """Verify imputed rows satisfy the balance equation.
-    
+
     Steps:
     1. Build six messages with one blanked financial field each (outflow types and
         CASH_IN).
@@ -267,13 +303,16 @@ def test_imputed_rows_satisfy_balance_arithmetic(cleaner):
     out = clean(cleaner, rows)
     sign = out["type"].map(lambda typ: 1 if typ == "CASH_IN" else -1)
     residual = out["oldbalanceOrg"] + sign * out["amount"] - out["newbalanceOrig"]
+    print(f"rows checked: {len(out)}")
+    print(f"residual (old + sign*amount - new) per row: {residual.tolist()}")
+    print(f"max |residual|: {residual.abs().max()} (expected 0.0)")
     assert residual.abs().max() == pytest.approx(0.0)
 
 
 @pytest.mark.parametrize("column", FINANCIAL_COLUMNS)
 def test_batch_with_fully_null_financial_column_is_cleaned(cleaner, column):
     """Verify cleaning works when a financial column is null in every row.
-    
+
     Steps:
     1. Build two messages with the same financial column blanked (amount, oldbalanceOrg
         and newbalanceOrig cases).
@@ -286,5 +325,7 @@ def test_batch_with_fully_null_financial_column_is_cleaned(cleaner, column):
         cleaner,
         [message(orig="C1", **{column: None}), message(orig="C2", **{column: None})],
     )
+    print(f"{column} null in both messages -> output rows: {len(out)} (expected 2)")
+    print(f"{column} after cleaning: {out[column].tolist()}")
     assert len(out) == 2
     assert out[column].notna().all()

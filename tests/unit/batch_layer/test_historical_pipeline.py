@@ -94,14 +94,24 @@ def sample_df(spark):
 def test_validate_data_missing_columns(pipeline, sample_df):
     df = sample_df.drop("amount")
 
-    with pytest.raises(ValueError, match="Missing columns"):
+    with pytest.raises(ValueError, match="Missing columns") as error:
         pipeline.validate_data(df)
+    print(f"column 'amount' dropped -> raised ValueError: {error.value}")
 
 
 def test_engineer_features(pipeline, sample_df):
     result = pipeline.engineer_features(sample_df)
 
     row = result.filter("nameOrig = 'C1'").first()
+    print(f"C1 amount_log: {row['amount_log']:.5f} (expected 4.61512)")
+    print(
+        f"C1 hour_of_day: {row['hour_of_day']} (expected 0), day: {row['day']} (expected 1)"
+    )
+    print(f"C1 orig_balance_diff: {row['orig_balance_diff']} (expected 100.0)")
+    print(f"C1 dest_balance_diff: {row['dest_balance_diff']} (expected 100.0)")
+    print(
+        f"C1 amount_to_balance_ratio: {row['amount_to_balance_ratio']} (expected 0.2)"
+    )
 
     assert row["amount_log"] == pytest.approx(4.61512)
     assert row["hour_of_day"] == 0
@@ -115,12 +125,27 @@ def test_engineer_features_zero_balance(pipeline, sample_df):
     df = sample_df.withColumn("oldbalanceOrg", sample_df["oldbalanceOrg"] * 0)
     result = pipeline.engineer_features(df)
 
-    assert all(row["amount_to_balance_ratio"] is None for row in result.collect())
+    ratios = [row["amount_to_balance_ratio"] for row in result.collect()]
+    print(
+        f"oldbalanceOrg set to 0 -> amount_to_balance_ratio per row: {ratios} (expected all None)"
+    )
+    assert all(ratio is None for ratio in ratios)
 
 
 def test_aggregate_data(pipeline, sample_df):
     hourly_stats, _, type_stats = pipeline.aggregate_data(sample_df)
     hourly = hourly_stats.filter("step = 1").first()
+    transfer = type_stats.filter("type = 'TRANSFER'").first()
+    print(
+        f"step 1: transaction_count={hourly['transaction_count']} (expected 2), "
+        f"total_amount={hourly['total_amount']} (expected 150.0), "
+        f"avg_amount={hourly['avg_amount']} (expected 75.0)"
+    )
+    print(
+        f"TRANSFER: transaction_count={transfer['transaction_count']} (expected 2), "
+        f"total_amount={transfer['total_amount']} (expected 300.0), "
+        f"avg_amount={transfer['avg_amount']} (expected 150.0)"
+    )
 
     assert hourly["transaction_count"] == 2
     assert hourly["total_amount"] == pytest.approx(150.0)

@@ -40,7 +40,7 @@ LOGIN_EVENT_COLUMNS = [
 class TestPreparePaysim:
     def test_split_is_exhaustive_and_disjoint(self, paysim_df):
         """Verify the batch/stream split loses and duplicates no PaySim row.
-        
+
         Steps:
         1. Take the 12-row PaySim fixture with steps on both sides of step 500.
         2. Call prepare_paysim(paysim_df, 500).
@@ -49,6 +49,18 @@ class TestPreparePaysim:
         - Row counts add up to the input; the two index sets are disjoint.
         """
         batch, stream = prepare_paysim(paysim_df, SPLIT_STEP)
+        print(
+            f"input rows: {len(paysim_df)}, batch rows: {len(batch)}, stream rows: {len(stream)}"
+        )
+        print(
+            f"batch steps: {batch['step'].min()}..{batch['step'].max()} (expected <= {SPLIT_STEP})"
+        )
+        print(
+            f"stream steps: {stream['step'].min()}..{stream['step'].max()} (expected > {SPLIT_STEP})"
+        )
+        print(
+            f"shared row indices: {len(set(batch.index) & set(stream.index))} (expected 0)"
+        )
 
         assert (batch["step"] <= SPLIT_STEP).all()
         assert (stream["step"] > SPLIT_STEP).all()
@@ -57,7 +69,7 @@ class TestPreparePaysim:
 
     def test_split_step_itself_belongs_to_batch(self, paysim_df):
         """Verify the boundary step 500 is assigned to the historical batch.
-        
+
         Steps:
         1. Call prepare_paysim(paysim_df, 500); the fixture has a row at step 500.
         2. Collect the distinct step values of both outputs.
@@ -65,12 +77,18 @@ class TestPreparePaysim:
         - Step 500 occurs in the batch and not in the stream.
         """
         batch, stream = prepare_paysim(paysim_df, SPLIT_STEP)
+        print(
+            f"step {SPLIT_STEP} in batch: {SPLIT_STEP in set(batch['step'])} (expected True)"
+        )
+        print(
+            f"step {SPLIT_STEP} in stream: {SPLIT_STEP in set(stream['step'])} (expected False)"
+        )
         assert SPLIT_STEP in set(batch["step"])
         assert SPLIT_STEP not in set(stream["step"])
 
     def test_event_time_is_derived_from_step(self, paysim_df):
         """Verify the added time attributes are consistent with the PaySim step.
-        
+
         Steps:
         1. Call prepare_paysim(paysim_df, 500).
         2. Compare event_time and second_offset with step in both outputs.
@@ -79,6 +97,17 @@ class TestPreparePaysim:
         - second_offset equals 0 in every row.
         """
         batch, stream = prepare_paysim(paysim_df, SPLIT_STEP)
+        for name, part in (("batch", batch), ("stream", stream)):
+            matches = (part["event_time"] == (part["step"] - 1) * HOUR).sum()
+            print(
+                f"{name}: event_time == (step - 1) * 3600 in {matches}/{len(part)} rows"
+            )
+            print(
+                f"{name}: second_offset values: {sorted(part['second_offset'].unique())} (expected [0])"
+            )
+        print(
+            f"event_time of step 1: {batch.loc[batch['step'] == 1, 'event_time'].iloc[0]} (expected 0)"
+        )
         for part in (batch, stream):
             assert (part["event_time"] == (part["step"] - 1) * HOUR).all()
             assert (part["second_offset"] == 0).all()
@@ -86,7 +115,7 @@ class TestPreparePaysim:
 
     def test_input_frame_is_not_mutated(self, paysim_df):
         """Verify prepare_paysim leaves the caller's DataFrame unchanged.
-        
+
         Steps:
         1. Copy the PaySim fixture.
         2. Call prepare_paysim on the original frame.
@@ -95,6 +124,9 @@ class TestPreparePaysim:
         """
         before = paysim_df.copy()
         prepare_paysim(paysim_df, SPLIT_STEP)
+        print(f"columns before: {list(before.columns)}")
+        print(f"columns after:  {list(paysim_df.columns)}")
+        print(f"frame equals its copy: {paysim_df.equals(before)} (expected True)")
         pd.testing.assert_frame_equal(paysim_df, before)
 
     @pytest.mark.parametrize(
@@ -102,7 +134,7 @@ class TestPreparePaysim:
     )
     def test_split_step_boundaries(self, paysim_df, split_step, expected_batch_rows):
         """Verify the split at extreme and intermediate split steps.
-        
+
         Steps:
         1. Call prepare_paysim with split_step 0, 499 and 743 (one case each).
         2. Count the rows of batch and stream.
@@ -111,6 +143,10 @@ class TestPreparePaysim:
         - Stream holds the remaining rows of the 12-row fixture.
         """
         batch, stream = prepare_paysim(paysim_df, split_step)
+        print(
+            f"split_step={split_step}: batch rows={len(batch)} (expected {expected_batch_rows}), "
+            f"stream rows={len(stream)} (expected {len(paysim_df) - expected_batch_rows})"
+        )
         assert len(batch) == expected_batch_rows
         assert len(stream) == len(paysim_df) - expected_batch_rows
 
@@ -118,7 +154,7 @@ class TestPreparePaysim:
 class TestSelectAccounts:
     def test_first_step_and_count_per_account(self, paysim_df):
         """Verify select_accounts aggregates the stream per sending account.
-        
+
         Steps:
         1. Split the fixture at step 500 and pass the stream to select_accounts.
         2. Read the rows of accounts C_B and C_D.
@@ -129,6 +165,16 @@ class TestSelectAccounts:
         """
         _, stream = prepare_paysim(paysim_df, SPLIT_STEP)
         info = select_accounts(stream).set_index("account_id")
+        print(f"columns: {list(info.columns)}")
+        print(
+            f"C_B: first step {info.loc['C_B', 'first_transaction_step']}, {info.loc['C_B', 'transaction_count']} transactions (expected 503, 2)"
+        )
+        print(
+            f"C_D: first step {info.loc['C_D', 'first_transaction_step']}, {info.loc['C_D', 'transaction_count']} transactions (expected 520, 2)"
+        )
+        print(
+            f"accounts: {len(info)} (distinct nameOrig in stream: {stream['nameOrig'].nunique()})"
+        )
 
         assert list(info.columns) == ["first_transaction_step", "transaction_count"]
         assert info.loc["C_B", "first_transaction_step"] == 503
@@ -140,7 +186,7 @@ class TestSelectAccounts:
 
     def test_subsample_returns_requested_number_of_accounts(self, paysim_df):
         """Verify n_accounts limits the selection to that many existing senders.
-        
+
         Steps:
         1. Split the fixture at step 500.
         2. Call select_accounts(stream, n_accounts=3).
@@ -150,6 +196,10 @@ class TestSelectAccounts:
         """
         _, stream = prepare_paysim(paysim_df, SPLIT_STEP)
         info = select_accounts(stream, n_accounts=3)
+        print(f"requested 3 accounts, got {len(info)}: {sorted(info['account_id'])}")
+        print(
+            f"all are senders in the stream: {set(info['account_id']) <= set(stream['nameOrig'])}"
+        )
         assert len(info) == 3
         assert set(info["account_id"]) <= set(stream["nameOrig"])
 
@@ -157,7 +207,7 @@ class TestSelectAccounts:
 class TestSampleDeviceProfiles:
     def test_each_account_gets_one_complete_known_profile(self, identity_df, paysim_df):
         """Verify every account receives one complete IEEE-CIS device profile.
-        
+
         Steps:
         1. Select all stream accounts of the PaySim fixture.
         2. Call sample_device_profiles with the identity fixture, which mixes complete
@@ -171,6 +221,13 @@ class TestSampleDeviceProfiles:
         out = sample_device_profiles(identity_df, info)
 
         complete = identity_df.dropna(subset=DEVICE_COLUMNS)[DEVICE_COLUMNS]
+        print(f"accounts: {len(info)}, profiles assigned: {len(out)}")
+        print(
+            f"nulls in device columns: {int(out[DEVICE_COLUMNS].isna().sum().sum())} (expected 0)"
+        )
+        print(
+            f"profiles assigned: {sorted(set(map(tuple, out[DEVICE_COLUMNS].values)))}"
+        )
         assert len(out) == len(info)
         assert out[DEVICE_COLUMNS].notna().all().all()
         assert set(map(tuple, out[DEVICE_COLUMNS].values)) <= set(
@@ -179,7 +236,7 @@ class TestSampleDeviceProfiles:
 
     def test_device_ids_are_unique_and_sequential(self, identity_df, paysim_df):
         """Verify device identifiers are unique and sequential.
-        
+
         Steps:
         1. Call sample_device_profiles for all stream accounts of the fixture.
         Expected:
@@ -187,11 +244,12 @@ class TestSampleDeviceProfiles:
         """
         _, stream = prepare_paysim(paysim_df, SPLIT_STEP)
         out = sample_device_profiles(identity_df, select_accounts(stream))
+        print(f"device_id: {list(out['device_id'])}")
         assert list(out["device_id"]) == [f"D{i:06d}" for i in range(1, len(out) + 1)]
 
     def test_device_type_shares_follow_reference_distribution(self, identity_df):
         """Verify sampled device types follow the reference distribution.
-        
+
         Steps:
         1. Build 5000 synthetic accounts.
         2. Call sample_device_profiles with the identity fixture (non-null DeviceType:
@@ -211,12 +269,14 @@ class TestSampleDeviceProfiles:
         share = sample_device_profiles(identity_df, info)["DeviceType"].value_counts(
             normalize=True
         )
+        print(f"desktop share: {share['desktop']:.3f} (expected 0.60 +/- 0.03)")
+        print(f"mobile share: {share['mobile']:.3f} (expected 0.40 +/- 0.03)")
         assert share["desktop"] == pytest.approx(0.6, abs=0.03)
         assert share["mobile"] == pytest.approx(0.4, abs=0.03)
 
     def test_raises_when_no_complete_profile_exists(self):
         """Verify identity data without any complete profile is rejected.
-        
+
         Steps:
         1. Build identity data whose only row has null device columns.
         2. Call sample_device_profiles for one account.
@@ -233,14 +293,15 @@ class TestSampleDeviceProfiles:
                 "transaction_count": [1],
             }
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as error:
             sample_device_profiles(identity, info)
+        print(f"raised ValueError: {error.value}")
 
 
 class TestAssignLoginScenarios:
     def test_values_come_from_documented_domains(self):
         """Verify activity patterns and login scenarios take documented values.
-        
+
         Steps:
         1. Call assign_login_scenarios for 100 accounts.
         Expected:
@@ -251,6 +312,12 @@ class TestAssignLoginScenarios:
         """
         accounts = pd.DataFrame({"account_id": [f"C{i}" for i in range(100)]})
         out = assign_login_scenarios(accounts)
+        print(f"accounts: {len(accounts)}, output rows: {len(out)}")
+        print(f"activity patterns: {sorted(set(out['activity_pattern']))}")
+        print(f"login scenarios: {sorted(set(out['login_scenario']))}")
+        print(
+            f"login_scenario added to the input frame: {'login_scenario' in accounts.columns} (expected False)"
+        )
 
         assert len(out) == len(accounts)
         assert set(out["activity_pattern"]) <= {"SHORT_ACTIVITY", "MIXED_ACTIVITY"}
@@ -274,6 +341,16 @@ class TestAssignLoginScenarios:
 
         activity = out["activity_pattern"].value_counts(normalize=True)
         scenario = out["login_scenario"].value_counts(normalize=True)
+        print(
+            f"SHORT_ACTIVITY: {activity['SHORT_ACTIVITY']:.3f} (expected 0.70 +/- 0.015)"
+        )
+        for name, target in (
+            ("NORMAL_LOGIN", 0.65),
+            ("SINGLE_FAILURE", 0.20),
+            ("MULTIPLE_FAILURES", 0.05),
+            ("MULTIPLE_LOGINS", 0.10),
+        ):
+            print(f"{name}: {scenario[name]:.3f} (expected {target:.2f} +/- 0.015)")
         assert activity["SHORT_ACTIVITY"] == pytest.approx(0.70, abs=0.015)
         assert scenario["NORMAL_LOGIN"] == pytest.approx(0.65, abs=0.015)
         assert scenario["SINGLE_FAILURE"] == pytest.approx(0.20, abs=0.015)
@@ -288,13 +365,15 @@ class TestGenerateLoginEvents:
 
     def test_output_schema(self, events):
         """Verify the schema and identifiers of generated login events.
-        
+
         Steps:
         1. Call generate_login_events(accounts_with_devices, 500).
         Expected:
         - Columns are the 12 documented ones, in the documented order.
         - event_id runs E0000001, E0000002, ... in row order.
         """
+        print(f"columns: {list(events.columns)}")
+        print(f"event_id: {list(events['event_id'])}")
         assert list(events.columns) == LOGIN_EVENT_COLUMNS
         assert list(events["event_id"]) == [
             f"E{i:07d}" for i in range(1, len(events) + 1)
@@ -302,7 +381,7 @@ class TestGenerateLoginEvents:
 
     def test_accounts_starting_at_or_before_split_plus_one_are_skipped(self, events):
         """Verify accounts without a pre-transaction window get no login events.
-        
+
         Steps:
         1. Generate events for the fixture, which holds accounts with first transaction
             step 501 (C_SKIP_501) and 502 (C_EDGE_502).
@@ -310,12 +389,15 @@ class TestGenerateLoginEvents:
         - C_SKIP_501 has no events.
         - C_EDGE_502 has events.
         """
+        counts = events["account_id"].value_counts()
+        print(f"events for C_SKIP_501: {counts.get('C_SKIP_501', 0)} (expected 0)")
+        print(f"events for C_EDGE_502: {counts.get('C_EDGE_502', 0)} (expected > 0)")
         assert "C_SKIP_501" not in set(events["account_id"])
         assert "C_EDGE_502" in set(events["account_id"])
 
     def test_event_sequence_matches_login_scenario(self, events, accounts_with_devices):
         """Verify each account's event types follow its login scenario.
-        
+
         Steps:
         1. Generate events for the fixture (one account per scenario).
         2. Order the events of each eligible account by event_time.
@@ -330,6 +412,11 @@ class TestGenerateLoginEvents:
             sequence = events[
                 events["account_id"] == account["account_id"]
             ].sort_values("event_time")
+            print(
+                f"{account['account_id']} ({account['login_scenario']}): "
+                f"{list(sequence['event_type'])} "
+                f"(expected {LOGIN_SCENARIOS[account['login_scenario']]})"
+            )
             assert (
                 list(sequence["event_type"])
                 == LOGIN_SCENARIOS[account["login_scenario"]]
@@ -341,7 +428,7 @@ class TestGenerateLoginEvents:
         self, events, accounts_with_devices
     ):
         """Verify login events fall between the split and the first transaction.
-        
+
         Steps:
         1. Generate events for the fixture.
         2. Compute each account's transaction start as (first_transaction_step - 1) *
@@ -357,6 +444,13 @@ class TestGenerateLoginEvents:
             events["account_id"].map(first_step).astype(int) - 1
         ) * HOUR
 
+        print(f"events: {len(events)}")
+        print(
+            f"earliest event_time: {events['event_time'].min()} (lower bound {SPLIT_STEP * HOUR})"
+        )
+        print(
+            f"min gap to first transaction: {(transaction_start - events['event_time']).min()} s (expected > 0)"
+        )
         assert (events["event_time"] < transaction_start).all()
         assert (events["event_time"] >= SPLIT_STEP * HOUR).all()
 
@@ -364,7 +458,7 @@ class TestGenerateLoginEvents:
         self, events, accounts_with_devices
     ):
         """Verify SHORT_ACTIVITY events stay within six hours of the transaction.
-        
+
         Steps:
         1. Generate events for the fixture.
         2. Keep the events of SHORT_ACTIVITY accounts.
@@ -381,13 +475,18 @@ class TestGenerateLoginEvents:
         transaction_start = (
             subset["account_id"].map(first_step).astype(int) - 1
         ) * HOUR
+        distance = transaction_start - subset["event_time"]
+        print(f"SHORT_ACTIVITY events: {len(subset)}")
+        print(
+            f"max distance to first transaction: {distance.max()} s (limit {NEAR_WINDOW_HOURS * HOUR} s)"
+        )
         assert (
             subset["event_time"] >= transaction_start - NEAR_WINDOW_HOURS * HOUR
         ).all()
 
     def test_gaps_between_events_respect_scenario_limits(self, events):
         """Verify gaps between consecutive events respect the scenario limits.
-        
+
         Steps:
         1. Generate events for the fixture.
         2. Compute the gaps between consecutive events of each scenario account.
@@ -403,6 +502,13 @@ class TestGenerateLoginEvents:
             ].sort_values()
             return times.diff().dropna().tolist()
 
+        for scenario in (
+            "C_NORMAL_LOGIN",
+            "C_SINGLE_FAILURE",
+            "C_MULTIPLE_FAILURES",
+            "C_MULTIPLE_LOGINS",
+        ):
+            print(f"{scenario}: gaps between events = {gaps(scenario)} s")
         assert gaps("C_NORMAL_LOGIN") == []
         assert all(1 <= gap <= 120 for gap in gaps("C_SINGLE_FAILURE"))
         assert all(1 <= gap <= 60 for gap in gaps("C_MULTIPLE_FAILURES"))
@@ -410,7 +516,7 @@ class TestGenerateLoginEvents:
 
     def test_step_and_second_offset_are_consistent_with_event_time(self, events):
         """Verify step and second_offset are consistent with event_time.
-        
+
         Steps:
         1. Generate events for the fixture.
         2. Recompute step and second_offset from event_time.
@@ -418,12 +524,16 @@ class TestGenerateLoginEvents:
         - step equals event_time // 3600 + 1 for every event.
         - second_offset equals event_time % 3600 for every event.
         """
+        step_ok = (events["step"] == events["event_time"] // HOUR + 1).sum()
+        offset_ok = (events["second_offset"] == events["event_time"] % HOUR).sum()
+        print(f"step == event_time // 3600 + 1 in {step_ok}/{len(events)} events")
+        print(f"second_offset == event_time % 3600 in {offset_ok}/{len(events)} events")
         assert (events["step"] == events["event_time"] // HOUR + 1).all()
         assert (events["second_offset"] == events["event_time"] % HOUR).all()
 
     def test_device_profile_is_copied_and_renamed(self, events, accounts_with_devices):
         """Verify events carry the account's device profile under the new names.
-        
+
         Steps:
         1. Generate events for the fixture.
         2. Compare each event with the row of its account.
@@ -440,6 +550,15 @@ class TestGenerateLoginEvents:
             "device_info": "DeviceInfo",
             "screen_resolution": "id_33",
         }
+        mismatches = 0
+        for _, event in events.iterrows():
+            account = accounts.loc[event["account_id"]]
+            mismatches += int(event["device_id"] != account["device_id"]) + sum(
+                event[new] != account[old] for new, old in renamed.items()
+            )
+        print(
+            f"events checked: {len(events)}, mismatching device fields: {mismatches} (expected 0)"
+        )
         for _, event in events.iterrows():
             account = accounts.loc[event["account_id"]]
             assert event["device_id"] == account["device_id"]
@@ -448,17 +567,18 @@ class TestGenerateLoginEvents:
 
     def test_output_is_sorted_by_event_time(self, events):
         """Verify login events are returned in chronological order.
-        
+
         Steps:
         1. Generate events for the fixture.
         Expected:
         - event_time is non-decreasing over the output rows.
         """
+        print(f"event_time over {len(events)} rows: {events['event_time'].tolist()}")
         assert events["event_time"].is_monotonic_increasing
 
     def test_account_with_one_hour_window_uses_that_hour(self, events):
         """Verify an account with a one-hour window gets its events in that hour.
-        
+
         Steps:
         1. Generate events for the fixture.
         2. Select the events of C_EDGE_502 (MULTIPLE_LOGINS, first step 502).
@@ -467,6 +587,9 @@ class TestGenerateLoginEvents:
         - Both lie in [500 * 3600, 501 * 3600).
         """
         times = events.loc[events["account_id"] == "C_EDGE_502", "event_time"]
+        print(
+            f"C_EDGE_502 event times: {times.tolist()} (window [{SPLIT_STEP * HOUR}, {(SPLIT_STEP + 1) * HOUR}))"
+        )
         assert len(times) == 2
         assert ((times >= SPLIT_STEP * HOUR) & (times < (SPLIT_STEP + 1) * HOUR)).all()
 
@@ -475,7 +598,7 @@ def test_save_data_writes_three_parquet_files(
     tmp_path, monkeypatch, paysim_df, accounts_with_devices
 ):
     """Verify save_data writes the three parquet outputs with all rows.
-    
+
     Steps:
     1. Redirect PROCESSED_DIR and RAW_STREAM_DIR to a temporary directory.
     2. Build batch, stream and login events and call save_data.
@@ -491,6 +614,27 @@ def test_save_data_writes_three_parquet_files(
     batch, stream = prepare_paysim(paysim_df, SPLIT_STEP)
     events = generate_login_events(accounts_with_devices, SPLIT_STEP)
     prepare_data.save_data(batch, stream, events)
+
+    for name, path, frame in (
+        (
+            "paysim_batch.parquet",
+            tmp_path / "processed" / "paysim_batch.parquet",
+            batch,
+        ),
+        (
+            "paysim_stream.parquet",
+            tmp_path / "raw_stream" / "paysim_stream.parquet",
+            stream,
+        ),
+        (
+            "login_events.parquet",
+            tmp_path / "raw_stream" / "login_events.parquet",
+            events,
+        ),
+    ):
+        print(
+            f"{name}: exists={path.exists()}, rows read back={len(pd.read_parquet(path))} (written {len(frame)})"
+        )
 
     assert len(pd.read_parquet(tmp_path / "processed" / "paysim_batch.parquet")) == len(
         batch
@@ -512,7 +656,7 @@ def _run_generation(paysim_df, identity_df):
 
 def test_generation_is_deterministic_under_project_seed(paysim_df, identity_df):
     """Verify login-event generation is reproducible under the project seed.
-    
+
     Steps:
     1. Seed NumPy with RANDOM_SEED and run split, account selection, device sampling,
         scenario assignment and event generation.
@@ -523,5 +667,7 @@ def test_generation_is_deterministic_under_project_seed(paysim_df, identity_df):
     """
     first = _run_generation(paysim_df, identity_df)
     second = _run_generation(paysim_df, identity_df)
+    print(f"run 1: {len(first)} events, run 2: {len(second)} events")
+    print(f"frames identical: {first.equals(second)} (expected True)")
     assert not first.empty
     pd.testing.assert_frame_equal(first, second)

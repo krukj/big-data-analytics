@@ -91,7 +91,7 @@ def two_steps():
 
 def test_check_data_path_accepts_only_parquet(tmp_path):
     """Verify stream inputs are accepted only as parquet paths.
-    
+
     Steps:
     1. Call StreamProducer._check_data_path with a path ending in x.parquet.
     2. Call it with a path ending in x.csv.
@@ -99,17 +99,17 @@ def test_check_data_path_accepts_only_parquet(tmp_path):
     - The parquet path is returned with suffix .parquet.
     - The csv path raises ValueError.
     """
-    assert (
-        StreamProducer._check_data_path(str(tmp_path / "x.parquet")).suffix
-        == ".parquet"
-    )
-    with pytest.raises(ValueError):
+    accepted = StreamProducer._check_data_path(str(tmp_path / "x.parquet"))
+    print(f"x.parquet accepted, returned suffix: {accepted.suffix}")
+    assert accepted.suffix == ".parquet"
+    with pytest.raises(ValueError) as error:
         StreamProducer._check_data_path(str(tmp_path / "x.csv"))
+    print(f"x.csv rejected with ValueError: {error.value}")
 
 
 def test_take_next_stream_filters_current_step(two_steps):
     """Verify only rows of the current simulation step are selected.
-    
+
     Steps:
     1. Build a producer at step 502 over rows of steps 501 and 502.
     2. Call _take_next_stream.
@@ -119,13 +119,19 @@ def test_take_next_stream_filters_current_step(two_steps):
     df, _ = two_steps
     producer = make_producer(df, first_step=502)
     out = producer._take_next_stream(df)
+    print(
+        f"input rows: {len(df)} (steps {sorted(df['step'].unique())}), current step: 502"
+    )
+    print(
+        f"selected rows: {len(out)} (expected 2), their steps: {sorted(out['step'].unique())}"
+    )
     assert len(out) == 2
     assert (out["step"] == 502).all()
 
 
 def test_data_corruption_conserves_rows_and_stores_delayed_ones():
     """Verify fault injection neither loses nor invents transactions.
-    
+
     Steps:
     1. Seed random with 0 and build 20 000 transactions of one step.
     2. Call _data_corruption and read the rows stored as delayed.
@@ -144,6 +150,10 @@ def test_data_corruption_conserves_rows_and_stores_delayed_ones():
     out = producer._data_corruption(df)
     delayed = producer.delayed_rows[producer.current_step]
     duplicates = len(out) - (n - len(delayed))
+    print(f"input rows: {n}, delayed: {len(delayed)}, duplicates: {duplicates}")
+    print(
+        f"emitted rows: {len(out)} (expected {n} - {len(delayed)} + {duplicates} = {n - len(delayed) + duplicates})"
+    )
 
     pd.testing.assert_frame_equal(df, before)
     assert len(delayed) > 0
@@ -156,7 +166,7 @@ def test_data_corruption_conserves_rows_and_stores_delayed_ones():
 
 def test_fault_rates_match_documented_values():
     """Verify injected fault rates match the documented values.
-    
+
     Steps:
     1. Seed random with 1 and corrupt 20 000 transactions of one step.
     2. Count rows with a blanked field, duplicated rows and delayed rows.
@@ -176,6 +186,13 @@ def test_fault_rates_match_documented_values():
     delayed = len(producer.delayed_rows[producer.current_step])
     duplicates = len(out) - (n - delayed)
     blanked = int(out[COLS].isna().any(axis=1).sum())
+    print(f"transactions: {n}")
+    print(f"blanked: {blanked} = {blanked / n:.2%} (expected 2% +/- 0.5 pp)")
+    print(f"duplicated: {duplicates} = {duplicates / n:.2%} (expected 0.5% +/- 0.2 pp)")
+    print(f"delayed: {delayed} = {delayed / n:.2%} (expected 1% +/- 0.3 pp)")
+    print(
+        f"max blanked fields in one row: {out[COLS].isna().sum(axis=1).max()} (expected <= 1)"
+    )
 
     assert blanked / n == pytest.approx(0.02, abs=0.005)
     assert duplicates / n == pytest.approx(0.005, abs=0.002)
@@ -185,7 +202,7 @@ def test_fault_rates_match_documented_values():
 
 def test_produce_replays_every_row_once_in_step_order(monkeypatch, two_steps):
     """Verify a fault-free replay sends every row once, in step order.
-    
+
     Steps:
     1. Disable faults by patching random.random to return 1.0.
     2. Run produce() over 3 rows of step 501, 2 rows of step 502 and 1 login.
@@ -202,6 +219,12 @@ def test_produce_replays_every_row_once_in_step_order(monkeypatch, two_steps):
 
     sent = produced(producer, TRANSACTION_TOPIC)
     sent_logins = produced(producer, LOGIN_TOPIC)
+    print(
+        f"transactions sent: {len(sent)} (expected {len(df)}), logins sent: {len(sent_logins)} (expected {len(logins)})"
+    )
+    print(f"steps in send order: {[m['step'] for m in sent]}")
+    print(f"accounts in send order: {[m['nameOrig'] for m in sent]}")
+    print(f"current_step after replay: {producer.current_step} (expected 503)")
 
     assert len(sent) == len(df)
     assert len(sent_logins) == len(logins)
@@ -213,7 +236,7 @@ def test_produce_replays_every_row_once_in_step_order(monkeypatch, two_steps):
 
 def test_delayed_row_is_re_emitted_in_the_following_step(monkeypatch, two_steps):
     """Verify a delayed transaction is re-emitted in the following step.
-    
+
     Steps:
     1. Script random.random so that only the first row of step 501 is delayed.
     2. Run produce() over steps 501 and 502.
@@ -230,6 +253,11 @@ def test_delayed_row_is_re_emitted_in_the_following_step(monkeypatch, two_steps)
     producer.produce()
 
     sent = produced(producer, TRANSACTION_TOPIC)
+    print(f"transactions sent: {len(sent)} (expected {len(df)})")
+    print(
+        f"steps in send order: {[m['step'] for m in sent]} (expected [501, 501, 502, 502, 501])"
+    )
+    print(f"accounts in send order: {[m['nameOrig'] for m in sent]} (last expected C0)")
 
     assert len(sent) == len(df)
     assert [m["step"] for m in sent] == [501, 501, 502, 502, 501]
